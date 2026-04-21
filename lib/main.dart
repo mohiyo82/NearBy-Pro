@@ -1,5 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'theme/app_theme.dart';
 
 // Auth & Onboarding
@@ -74,8 +77,65 @@ import 'screens/maintenance_screen.dart';
 import 'screens/logout_confirmation_screen.dart';
 import 'screens/account_delete_confirmation_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    
+    // Pass all uncaught errors from the framework to Crashlytics.
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    
+    // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
+
+  // Graceful Error Handling (No more Red Screens)
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Colors.red, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Oops! Something went wrong',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'We have logged this issue and our team is looking into it.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    // Try to restart or go home
+                  },
+                  child: const Text('Go Back'),
+                )
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  };
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -98,7 +158,6 @@ class NearByProApp extends StatelessWidget {
       theme: AppTheme.theme,
       initialRoute: '/splash',
       routes: {
-        // ── Auth & Onboarding ──────────────────────────────────
         '/splash': (_) => const SplashScreen(),
         '/onboarding1': (_) => const OnboardingScreen1(),
         '/onboarding2': (_) => const OnboardingScreen2(),
@@ -106,16 +165,12 @@ class NearByProApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignupScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
-
-        // ── Profile Setup ──────────────────────────────────────
         '/create-profile': (_) => const CreateProfileScreen(),
         '/personal-details': (_) => const PersonalDetailsScreen(),
         '/education-details': (_) => const EducationDetailsScreen(),
         '/skills-selection': (_) => const SkillsSelectionScreen(),
         '/resume-upload': (_) => const ResumeUploadScreen(),
         '/profile-preview': (_) => const ProfilePreviewScreen(),
-
-        // ── Main App Flow ──────────────────────────────────────
         '/home': (_) => const HomeDashboardScreen(),
         '/global-search': (_) => const GlobalSearchScreen(),
         '/category-selection': (_) => const CategorySelectionScreen(),
@@ -125,33 +180,25 @@ class NearByProApp extends StatelessWidget {
         '/advanced-filters': (_) => const AdvancedFiltersScreen(),
         '/search-loading': (_) => const SearchResultsLoadingScreen(),
         '/map-picker': (_) => const MapLocationPickerScreen(),
-
-        // ── Search Results ─────────────────────────────────────
         '/results-list': (_) => const ResultsListViewScreen(),
         '/results-map': (_) => const ResultsMapViewScreen(),
-        '/result-detail': (_) => const Single_result_card_detail_screen_detail_screen(),
+        '/result-detail': (_) => const SingleResultCardDetailScreen(),
         '/contact-info': (_) => const ContactInformationScreen(),
         '/save-result': (_) => const SaveResultScreen(),
         '/similar-places': (_) => const SimilarPlacesScreen(),
         '/empty-results': (_) => const EmptyResultScreen(),
-
-        // ── Contact & Apply ────────────────────────────────────
         '/contact-list': (_) => const ContactListScreen(),
         '/contact-detail': (_) => const ContactDetailScreen(),
         '/apply-connect': (_) => const ApplyConnectScreen(),
         '/resume-match': (_) => const ResumeMatchPreviewScreen(),
         '/application-success': (_) => const ApplicationSuccessScreen(),
         '/saved-contacts': (_) => const SavedContactsScreen(),
-
-        // ── User Data & History ────────────────────────────────
         '/search-history': (_) => const SearchHistoryScreen(),
         '/saved-searches': (_) => const SavedSearchesScreen(),
         '/saved-places': (_) => const SavedPlacesScreen(),
         '/resume-manager': (_) => const ResumeManagerScreen(),
         '/edit-resume': (_) => const EditResumeScreen(),
         '/profile-analytics': (_) => const ProfileAnalyticsScreen(),
-
-        // ── Settings & Info ────────────────────────────────────
         '/settings': (_) => const SettingsScreen(),
         '/theme-settings': (_) => const ThemeSettingsScreen(),
         '/notification-settings': (_) => const NotificationSettingsScreen(),
@@ -161,8 +208,6 @@ class NearByProApp extends StatelessWidget {
         '/privacy-settings': (_) => const PrivacySettingsScreen(),
         '/subscriptions': (_) => const SubscriptionPlansScreen(),
         '/payment-method': (_) => const PaymentMethodScreen(),
-
-        // ── Extra UX ───────────────────────────────────────────
         '/permission': (_) => const PermissionRequestScreen(),
         '/location-disabled': (_) => const LocationDisabledScreen(),
         '/internet-error': (_) => const InternetErrorScreen(),
@@ -172,10 +217,4 @@ class NearByProApp extends StatelessWidget {
       },
     );
   }
-}
-
-class Single_result_card_detail_screen_detail_screen extends StatelessWidget {
-  const Single_result_card_detail_screen_detail_screen({super.key});
-  @override
-  Widget build(BuildContext context) => const SingleResultCardDetailScreen();
 }

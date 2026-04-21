@@ -1,8 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter email and password')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'An error occurred';
+      if (e.code == 'user-not-found') message = 'No user found for that email.';
+      else if (e.code == 'wrong-password') message = 'Wrong password provided for that user.';
+      else if (e.code == 'invalid-email') message = 'The email address is badly formatted.';
+      
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +85,10 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 40),
               const Text('Email Address', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
+                controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter your email',
                   prefixIcon: Icon(Icons.email_outlined, color: AppColors.textGray),
                 ),
@@ -44,12 +96,16 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
               const SizedBox(height: 8),
-              const TextField(
-                obscureText: true,
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   hintText: 'Enter your password',
-                  prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.textGray),
-                  suffixIcon: Icon(Icons.visibility_off_outlined, color: AppColors.textGray),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.textGray),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: AppColors.textGray),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -61,9 +117,12 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-                child: const Text('Sign In'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Sign In'),
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -78,7 +137,9 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  // Google Sign In logic can be added here later
+                },
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 52),
                   side: const BorderSide(color: AppColors.border),

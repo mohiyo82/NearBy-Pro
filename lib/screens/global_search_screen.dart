@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/database_service.dart';
 import '../theme/app_theme.dart';
 
 class GlobalSearchScreen extends StatefulWidget {
@@ -10,7 +12,7 @@ class GlobalSearchScreen extends StatefulWidget {
 
 class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<String> _searchHistory = [];
+  final DatabaseService _dbService = DatabaseService();
   int _currentIndex = 1;
 
   static const List<String> _suggestions = [
@@ -23,16 +25,16 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
     'Software House Islamabad', 'Private Schools',
   ];
 
-  void _performSearch([String? query]) {
+  void _performSearch([String? query]) async {
     final searchTerm = query ?? _searchController.text.trim();
     if (searchTerm.isNotEmpty) {
-      setState(() {
-        if (!_searchHistory.contains(searchTerm)) {
-          _searchHistory.insert(0, searchTerm);
-        }
-      });
-      // Navigate to results
-      Navigator.pushNamed(context, '/search-loading');
+      // Save search term to Firestore history
+      await _dbService.addSearchHistory(searchTerm);
+      
+      if (mounted) {
+        // Navigate to results
+        Navigator.pushNamed(context, '/search-loading', arguments: searchTerm);
+      }
     }
   }
 
@@ -144,8 +146,11 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
             const SizedBox(height: 24),
             const Text('Search History', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
             const SizedBox(height: 16),
-            _searchHistory.isEmpty
-                ? Container(
+            StreamBuilder<QuerySnapshot>(
+              stream: _dbService.searchHistoryStream,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
                     child: const Row(
@@ -155,27 +160,36 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
                         Text('No recent searches', style: TextStyle(color: AppColors.textGray)),
                       ],
                     ),
-                  )
-                : Column(
-                    children: _searchHistory
-                        .map((h) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.history_rounded, color: AppColors.textGray),
-                              title: Text(h, style: const TextStyle(fontWeight: FontWeight.w500)),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textLight),
-                                onPressed: () => setState(() => _searchHistory.remove(h)),
-                              ),
-                              onTap: () => _performSearch(h),
-                            ))
-                        .toList(),
-                  ),
+                  );
+                }
+                
+                return Column(
+                  children: snapshot.data!.docs.map((doc) {
+                    var data = doc.data() as Map<String, dynamic>;
+                    String term = data['query'] ?? "";
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.history_rounded, color: AppColors.textGray),
+                      title: Text(term, style: const TextStyle(fontWeight: FontWeight.w500)),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textLight),
+                        onPressed: () {
+                          // Optional: Add logic to delete specific history item in DatabaseService
+                        },
+                      ),
+                      onTap: () => _performSearch(term),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onBottomNavTapped,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: 'Search'),
