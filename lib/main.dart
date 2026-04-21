@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
+import 'services/auth_service.dart';
+import 'services/database_service.dart';
 
-// Auth & Onboarding
+// Screens
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen_1.dart';
 import 'screens/onboarding_screen_2.dart';
@@ -13,16 +16,12 @@ import 'screens/onboarding_screen_3.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/forgot_password_screen.dart';
-
-// Profile Setup
 import 'screens/create_profile_screen.dart';
 import 'screens/personal_details_screen.dart';
 import 'screens/education_details_screen.dart';
 import 'screens/skills_selection_screen.dart';
 import 'screens/resume_upload_screen.dart';
 import 'screens/profile_preview_screen.dart';
-
-// Main App Flow
 import 'screens/home_dashboard_screen.dart';
 import 'screens/global_search_screen.dart';
 import 'screens/category_selection_screen.dart';
@@ -32,8 +31,6 @@ import 'screens/distance_filter_screen.dart';
 import 'screens/advanced_filters_screen.dart';
 import 'screens/search_results_loading_screen.dart';
 import 'screens/map_location_picker_screen.dart';
-
-// Search Results
 import 'screens/results_list_view_screen.dart';
 import 'screens/results_map_view_screen.dart';
 import 'screens/single_result_card_detail_screen.dart';
@@ -41,24 +38,18 @@ import 'screens/contact_information_screen.dart';
 import 'screens/save_result_screen.dart';
 import 'screens/similar_places_screen.dart';
 import 'screens/empty_result_screen.dart';
-
-// Contact & Apply
 import 'screens/contact_list_screen.dart';
 import 'screens/contact_detail_screen.dart';
 import 'screens/apply_connect_screen.dart';
 import 'screens/resume_match_preview_screen.dart';
 import 'screens/application_success_screen.dart';
 import 'screens/saved_contacts_screen.dart';
-
-// User Data & History
 import 'screens/search_history_screen.dart';
 import 'screens/saved_searches_screen.dart';
 import 'screens/saved_places_screen.dart';
 import 'screens/resume_manager_screen.dart';
 import 'screens/edit_resume_screen.dart';
 import 'screens/profile_analytics_screen.dart';
-
-// Settings & Info
 import 'screens/settings_screen.dart';
 import 'screens/theme_settings_screen.dart';
 import 'screens/notification_settings_screen.dart';
@@ -68,8 +59,6 @@ import 'screens/security_settings_screen.dart';
 import 'screens/privacy_settings_screen.dart';
 import 'screens/subscription_plans_screen.dart';
 import 'screens/payment_method_screen.dart';
-
-// Extra UX Screens
 import 'screens/permission_request_screen.dart';
 import 'screens/location_disabled_screen.dart';
 import 'screens/internet_error_screen.dart';
@@ -80,16 +69,13 @@ import 'screens/account_delete_confirmation_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
   try {
     await Firebase.initializeApp();
     
-    // Pass all uncaught errors from the framework to Crashlytics.
+    // Crashlytics Setup
     FlutterError.onError = (errorDetails) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     };
-    
-    // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
     PlatformDispatcher.instance.onError = (error, stack) {
       FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
       return true;
@@ -98,7 +84,7 @@ void main() async {
     debugPrint('Firebase initialization error: $e');
   }
 
-  // Graceful Error Handling (No more Red Screens)
+  // Graceful Error Handling (Checklist Point #4)
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -111,23 +97,11 @@ void main() async {
               children: [
                 const Icon(Icons.error_outline_rounded, color: Colors.red, size: 64),
                 const SizedBox(height: 16),
-                const Text(
-                  'Oops! Something went wrong',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                const Text('Oops! Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text(
-                  'We have logged this issue and our team is looking into it.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
+                const Text('We have logged this issue and our team is looking into it.', textAlign: TextAlign.center),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () {
-                    // Try to restart or go home
-                  },
-                  child: const Text('Go Back'),
-                )
+                ElevatedButton(onPressed: () {}, child: const Text('Refresh App')),
               ],
             ),
           ),
@@ -136,15 +110,18 @@ void main() async {
     );
   };
 
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-  runApp(const NearByProApp());
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  
+  runApp(
+    // Architecture & State Integrity (Checklist Point #1)
+    MultiProvider(
+      providers: [
+        Provider<AuthService>(create: (_) => AuthService()),
+        Provider<DatabaseService>(create: (_) => DatabaseService()),
+      ],
+      child: const NearByProApp(),
+    ),
+  );
 }
 
 class NearByProApp extends StatelessWidget {
