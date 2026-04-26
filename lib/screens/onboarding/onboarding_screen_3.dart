@@ -25,8 +25,14 @@ class OnboardingScreen3 extends StatelessWidget {
               Container(
                 width: 220,
                 height: 220,
-                decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.10), shape: BoxShape.circle),
-                child: const Icon(Icons.handshake_rounded, size: 100, color: AppColors.accent),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                  image: const DecorationImage(
+                    image: AssetImage('assets/images/onbording_3.jpeg'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
               const SizedBox(height: 48),
               const Text(

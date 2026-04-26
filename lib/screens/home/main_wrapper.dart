@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
 import 'home_dashboard_screen.dart';
 import '../search/global_search_screen.dart';
 import '../results/saved_places_screen.dart';
@@ -27,62 +26,67 @@ class _MainWrapperState extends State<MainWrapper> {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    // ✅ Safe area bottom padding (home indicator wali space)
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: SizedBox(
-        height: 100, // Increased overall height
+      bottomNavigationBar: Container(
+        // ✅ Height bhari: bar (85) + bottom safe area + extra padding (12)
+        height: 85 + bottomPadding + 12,
+        color: Colors.transparent,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            // ─── The Curved Background Bar ───
+            // ─── White curved background bar ───
             Positioned(
               bottom: 0,
               left: 0,
               child: CustomPaint(
-                size: Size(size.width, 80), // Bar height increased to 80
+                size: Size(size.width, 85 + bottomPadding + 12),
                 painter: BNBCustomPainter(selectedIndex: _currentIndex),
               ),
             ),
-            
-            // ─── The Animated Floating Bubble ───
+
+            // ─── Animated floating bubble ───
             AnimatedPositioned(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.elasticOut,
-              left: (size.width / 5) * _currentIndex + (size.width / 10) - 30,
-              top: 5, // Perfectly centered in the larger bar
-              child: Container(
-                width: 60, // Slightly larger bubble
-                height: 60,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D3E4E),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  _getIcon(_currentIndex),
-                  color: Colors.white,
-                  size: 28,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeInOut,
+              left: (size.width / 5) * _currentIndex +
+                  (size.width / 10) -
+                  32, // ✅ bubble thoda bada (64/2)
+              top: 0,
+              child: Material(
+                elevation: 8,
+                shadowColor: Colors.black38,
+                shape: const CircleBorder(),
+                child: Container(
+                  width: 64,  // ✅ Bubble bada kiya
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2D3E4E),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getIcon(_currentIndex),
+                    color: Colors.white,
+                    size: 32, // ✅ Selected icon bada
+                  ),
                 ),
               ),
             ),
 
-            // ─── The Unselected Icons & Labels ───
+            // ─── Unselected icons & labels ───
             Positioned(
-              bottom: 0,
+              bottom: bottomPadding + 6, // ✅ bottom padding ke sath shift
               left: 0,
               child: SizedBox(
                 width: size.width,
-                height: 80,
+                height: 75,
                 child: Row(
                   children: [
                     _buildNavItem(0, Icons.home_rounded, 'Home'),
@@ -112,7 +116,7 @@ class _MainWrapperState extends State<MainWrapper> {
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
-    bool isSelected = _currentIndex == index;
+    final bool isSelected = _currentIndex == index;
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _currentIndex = index),
@@ -120,14 +124,22 @@ class _MainWrapperState extends State<MainWrapper> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isSelected) 
-              const SizedBox(height: 40) // Space for the larger floating bubble
+            if (isSelected)
+              const SizedBox(height: 64) // ✅ bubble size ke barabar space
             else ...[
-              Icon(icon, color: const Color(0xFF455A64).withValues(alpha: 0.7), size: 26),
+              Icon(
+                icon,
+                color: const Color(0xFF455A64),
+                size: 30, // ✅ Unselected icons bade kiye
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF455A64)),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF455A64),
+                ),
               ),
             ],
           ],
@@ -143,27 +155,30 @@ class BNBCustomPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()
+    final Paint paint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    double itemWidth = size.width / 5;
-    double centerX = itemWidth * selectedIndex + itemWidth / 2;
+    final double itemWidth = size.width / 5;
+    final double centerX = itemWidth * selectedIndex + itemWidth / 2;
 
-    Path path = Path();
-    path.moveTo(0, 0); 
-    path.lineTo(centerX - 45, 0);
+    const double curveDepth = 38.0;
+    const double curveWidth = 42.0;
+    const double curveRadius = 30.0;
 
-    // Deep smooth curve adjusted for height 80
+    final Path path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(centerX - curveWidth - 12, 0);
+
     path.cubicTo(
-      centerX - 30, 0,
-      centerX - 25, 45,
-      centerX, 45,
+      centerX - curveWidth,  0,
+      centerX - curveRadius, curveDepth,
+      centerX,               curveDepth,
     );
     path.cubicTo(
-      centerX + 25, 45,
-      centerX + 30, 0,
-      centerX + 45, 0,
+      centerX + curveRadius, curveDepth,
+      centerX + curveWidth,  0,
+      centerX + curveWidth + 12, 0,
     );
 
     path.lineTo(size.width, 0);
@@ -171,10 +186,11 @@ class BNBCustomPainter extends CustomPainter {
     path.lineTo(0, size.height);
     path.close();
 
-    canvas.drawShadow(path, Colors.black.withValues(alpha: 0.2), 10, true);
+    canvas.drawShadow(path, Colors.black26, 10, false);
     canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant BNBCustomPainter old) =>
+      old.selectedIndex != selectedIndex;
 }

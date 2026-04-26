@@ -83,7 +83,13 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
                 Center(
-                  child: _buildExactLogo(),
+                  child: Image.asset(
+                    'assets/images/splash_icon.jpeg',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => _buildExactLogo(),
+                  ),
                 ),
                 const SizedBox(height: 40),
 
@@ -120,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                       child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w500)),
                     ),
                   ),
@@ -156,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: const Color(0xFF333333),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))
+                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))
                             ],
                           ),
                           child: _isLoading 
@@ -217,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.white, shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.withValues(alpha: 0.2), width: 1),
+                border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
                 boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
               ),
               child: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 16),

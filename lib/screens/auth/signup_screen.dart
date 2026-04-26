@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 
@@ -168,7 +169,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         CircleAvatar(
                           radius: 35,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
                           backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
                           child: _profileImage == null ? const Icon(Icons.person_add_alt_1_rounded, size: 28, color: AppColors.primary) : null,
                         ),
@@ -213,14 +214,13 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(decoration: InputDecoration(filled: true, fillColor: AppColors.surface, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)), prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textGray)), hint: const Text('Select user type'), value: _selectedUserType, items: const [DropdownMenuItem(value: 'student', child: Text('Student')), DropdownMenuItem(value: 'job_seeker', child: Text('Job Seeker')), DropdownMenuItem(value: 'business', child: Text('Business Explorer')), DropdownMenuItem(value: 'other', child: Text('Other'))], onChanged: (val) => setState(() => _selectedUserType = val), validator: (val) => val == null ? 'Required' : null),
               
-              // ─── Error Message Display ───
               if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 15.0),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                     child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500)),
                   ),
                 ),
@@ -242,26 +242,36 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF333333),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))
                           ],
                         ),
                         child: _isLoading 
-                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Image.network(
+                          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                          : SvgPicture.network(
                               'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                               width: 24,
                               height: 24,
-                              fit: BoxFit.contain,
                             ),
                       ),
+                    ),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Already have an account? ', style: TextStyle(color: AppColors.textGray, fontSize: 14)),
+                        GestureDetector(
+                          onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                          child: const Text('Login', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
             ],
           ),
         ),

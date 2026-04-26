@@ -27,7 +27,7 @@ import 'screens/profile/resume_upload_screen.dart';
 import 'screens/profile/profile_preview_screen.dart';
 import 'screens/profile/resume_manager_screen.dart';
 import 'screens/profile/edit_resume_screen.dart';
-import 'screens/profile/edit_profile_screen.dart'; // Import Fix
+import 'screens/profile/edit_profile_screen.dart'; 
 import 'screens/profile/profile_analytics_screen.dart';
 
 // ─── MAIN APP FLOW ──────────────────────────────────────
@@ -70,6 +70,7 @@ import 'screens/settings/security_settings_screen.dart';
 import 'screens/settings/privacy_settings_screen.dart';
 import 'screens/settings/subscription_plans_screen.dart';
 import 'screens/settings/payment_method_screen.dart';
+import 'screens/settings/change_password_screen.dart'; // Import Added
 import 'screens/auth/account_delete_confirmation_screen.dart';
 
 // ─── SYSTEM & UX ────────────────────────────────────────
@@ -156,7 +157,7 @@ class NearByProApp extends StatelessWidget {
         '/skills-selection': (_) => const SkillsSelectionScreen(),
         '/resume-upload': (_) => const ResumeUploadScreen(),
         '/profile-preview': (_) => const ProfilePreviewScreen(),
-        '/edit-profile': (_) => const EditProfileScreen(), // Route Added
+        '/edit-profile': (_) => const EditProfileScreen(), 
         '/home': (_) => const MainWrapper(), 
         '/global-search': (_) => const GlobalSearchScreen(),
         '/category-selection': (_) => const CategorySelectionScreen(),
@@ -194,6 +195,7 @@ class NearByProApp extends StatelessWidget {
         '/privacy-settings': (_) => const PrivacySettingsScreen(),
         '/subscriptions': (_) => const SubscriptionPlansScreen(),
         '/payment-method': (_) => const PaymentMethodScreen(),
+        '/change-password': (_) => const ChangePasswordScreen(), // Route Added
         '/permission': (_) => const PermissionRequestScreen(),
         '/location-disabled': (_) => const LocationDisabledScreen(),
         '/internet-error': (_) => const InternetErrorScreen(),

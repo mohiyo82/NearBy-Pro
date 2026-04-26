@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
+import '../../services/auth_service.dart';
 
 class AccountDeleteConfirmationScreen extends StatefulWidget {
   const AccountDeleteConfirmationScreen({super.key});
@@ -11,12 +13,13 @@ class AccountDeleteConfirmationScreen extends StatefulWidget {
 class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmationScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _errorMessage;
 
-  void _handleDelete() {
+  Future<void> _handleDelete() async {
+    setState(() => _errorMessage = null);
+    
     if (_passwordController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your password to confirm'), behavior: SnackBarBehavior.floating),
-      );
+      setState(() => _errorMessage = 'Please enter your password to confirm');
       return;
     }
 
@@ -25,7 +28,7 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Final Confirmation'),
-        content: const Text('Are you sure you want to schedule your account for deletion? You will have 30 days to cancel this request.'),
+        content: const Text('Are you sure? This will permanently delete your account and all professional data from our servers.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('No, Cancel')),
           ElevatedButton(
@@ -34,23 +37,34 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
               _processDeletion();
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Yes, Delete'),
+            child: const Text('Yes, Delete Everything'),
           ),
         ],
       ),
     );
   }
 
-  void _processDeletion() {
+  Future<void> _processDeletion() async {
     setState(() => _isLoading = true);
     
-    // Simulate API call
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.deleteAccount(_passwordController.text.trim());
+      
       if (mounted) {
-        setState(() => _isLoading = false);
         _showSuccessDialog();
       }
-    });
+    } catch (e) {
+      setState(() {
+        if (e.toString().contains('wrong-password')) {
+          _errorMessage = 'Incorrect password. Deletion failed.';
+        } else {
+          _errorMessage = 'Error: ${e.toString()}';
+        }
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showSuccessDialog() {
@@ -59,38 +73,25 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.timer_outlined, color: AppColors.error, size: 48),
-            ),
-            const SizedBox(height: 24),
-            const Text('Account Scheduled', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text(
-              'Your account will be permanently deleted in 30 days. You can log back in anytime before then to cancel this request.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textGray, fontSize: 14, height: 1.5),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-                },
-                child: const Text('OK'),
-              ),
-            ),
-            const SizedBox(height: 8),
+            SizedBox(height: 16),
+            Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
+            SizedBox(height: 24),
+            Text('Account Deleted', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            Text('Your account and data have been removed permanently.', textAlign: TextAlign.center),
+            SizedBox(height: 24),
           ],
         ),
       ),
     );
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    });
   }
 
   @override
@@ -114,39 +115,23 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
             Center(
               child: Column(children: [
                 Container(
-                  width: 100,
-                  height: 100,
+                  width: 100, height: 100,
                   decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), shape: BoxShape.circle),
                   child: const Icon(Icons.delete_forever_rounded, size: 56, color: AppColors.error),
                 ),
                 const SizedBox(height: 20),
                 const Text('Delete Your Account?', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textDark)),
                 const SizedBox(height: 10),
-                const Text('This action is permanent and cannot be undone after 30 days.', style: TextStyle(color: AppColors.textGray, fontSize: 14), textAlign: TextAlign.center),
+                const Text('This will permanently erase your profile, CV, and all saved data.', style: TextStyle(color: AppColors.textGray, fontSize: 14), textAlign: TextAlign.center),
               ]),
             ),
-            const SizedBox(height: 28),
-            const Text('What will be deleted:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-            const SizedBox(height: 12),
-            ...[
-              'Your profile and resume data',
-              'All saved places and contacts',
-              'Search history and preferences',
-              'All applications sent',
-            ].map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(children: [
-                    const Icon(Icons.remove_circle_rounded, color: AppColors.error, size: 18),
-                    const SizedBox(width: 10),
-                    Text(item, style: const TextStyle(color: AppColors.textGray, fontSize: 14)),
-                  ]),
-                )),
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
             const Text('Confirm with your password:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _passwordController,
               obscureText: true,
+              onChanged: (_) => setState(() => _errorMessage = null),
               decoration: InputDecoration(
                 hintText: 'Enter your password',
                 prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textLight),
@@ -155,6 +140,11 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -167,20 +157,13 @@ class _AccountDeleteConfirmationScreenState extends State<AccountDeleteConfirmat
                     : const Text('Permanently Delete Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
               ),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: OutlinedButton(
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('Keep My Account', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700)),
+                child: const Text('I changed my mind, keep my account', style: TextStyle(color: AppColors.textGray, fontWeight: FontWeight.w600)),
               ),
             ),
-            const SizedBox(height: 24),
           ],
         ),
       ),

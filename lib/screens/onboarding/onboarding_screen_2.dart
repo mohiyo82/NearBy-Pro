@@ -25,14 +25,10 @@ class OnboardingScreen2 extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 32),
-              Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.search_rounded, size: 100, color: AppColors.secondary),
+              CircleAvatar(
+                radius: 110,
+                backgroundColor: AppColors.secondary.withOpacity(0.08),
+                backgroundImage: const AssetImage('assets/images/onbording_2.jpeg'),
               ),
               const SizedBox(height: 48),
               const Text(

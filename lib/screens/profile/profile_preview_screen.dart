@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +5,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/shared_widgets.dart';
 
 class ProfilePreviewScreen extends StatefulWidget {
   const ProfilePreviewScreen({super.key});
@@ -40,51 +38,56 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
-                          pw.Text('${data['firstName'] ?? ''} ${data['lastName'] ?? ''}', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                          pw.Text(data['email'] ?? '', style: const pw.TextStyle(fontSize: 12)),
-                          pw.Text(data['phone'] ?? '', style: const pw.TextStyle(fontSize: 12)),
+                          pw.Text('${data['firstName'] ?? ''} ${data['lastName'] ?? ''}', 
+                              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(data['title'] ?? '', style: const pw.TextStyle(fontSize: 14)),
+                          pw.Text(data['email'] ?? '', style: const pw.TextStyle(fontSize: 10)),
+                          pw.Text(data['phone'] ?? '', style: const pw.TextStyle(fontSize: 10)),
                         ],
                       ),
                     ],
                   ),
                 ),
                 pw.SizedBox(height: 20),
-                pw.Text('Professional Summary', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Professional Summary', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
                 pw.Divider(),
-                pw.Text(data['bio'] ?? 'No bio provided.'),
-                pw.SizedBox(height: 20),
-                pw.Text('Skills', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-                pw.Divider(),
-                pw.Wrap(
-                  spacing: 10,
-                  children: (data['skills'] as List? ?? []).map((s) => pw.Text('• ${s['name']}')).toList(),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text('Education', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-                pw.Divider(),
-                ...(data['education'] as List? ?? []).map((e) => pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 10),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(e['degree'] ?? '', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(e['institute'] ?? ''),
-                    ],
-                  ),
-                )),
-                pw.SizedBox(height: 20),
-                pw.Text('Experience', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-                pw.Divider(),
-                ...(data['experience'] as List? ?? []).map((ex) => pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 10),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(ex['role'] ?? '', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                      pw.Text(ex['company'] ?? ''),
-                    ],
-                  ),
-                )),
+                pw.Text(data['bio'] ?? 'No bio provided.', style: const pw.TextStyle(fontSize: 11)),
+                
+                if ((data['education'] as List? ?? []).isNotEmpty) ...[
+                  pw.SizedBox(height: 20),
+                  pw.Text('Education', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                  pw.Divider(),
+                  ...(data['education'] as List? ?? []).map((e) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 8),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(e['degree'] ?? '', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.Text('${e['institution'] ?? ''} | ${e['startDate'] ?? ''} - ${e['endDate'] ?? 'Present'}', 
+                            style: const pw.TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  )),
+                ],
+
+                if ((data['experience'] as List? ?? []).isNotEmpty) ...[
+                  pw.SizedBox(height: 20),
+                  pw.Text('Experience', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                  pw.Divider(),
+                  ...(data['experience'] as List? ?? []).map((ex) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 8),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(ex['jobTitle'] ?? '', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12)),
+                        pw.Text('${ex['companyName'] ?? ''} | ${ex['startDate'] ?? ''} - ${ex['endDate'] ?? 'Present'}', 
+                            style: const pw.TextStyle(fontSize: 10)),
+                        if (ex['description'] != null)
+                          pw.Text(ex['description'], style: const pw.TextStyle(fontSize: 9)),
+                      ],
+                    ),
+                  )),
+                ],
               ],
             );
           },
@@ -93,40 +96,53 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
 
       await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
     } finally {
-      setState(() => _isGeneratingPdf = false);
+      if (mounted) setState(() => _isGeneratingPdf = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (user == null) {
+      return const Scaffold(body: Center(child: Text('Please log in first')));
+    }
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
-        title: const Text('My Professional Profile'),
+        title: const Text('My Professional Profile', 
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           IconButton(
             onPressed: () => Navigator.pushNamed(context, '/edit-profile'),
-            icon: const Icon(Icons.edit_note_rounded),
+            icon: const Icon(Icons.edit_outlined, color: Color(0xFF1B4332)),
             tooltip: 'Edit Profile',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(user?.uid).snapshots(),
+        stream: FirebaseFirestore.instance.collection('users').doc(user!.uid).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)));
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Profile not found. Please create one.'));
+            return const Center(child: Text('Profile not found. Go to Edit to create one.'));
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -134,17 +150,30 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
                 const SizedBox(height: 16),
                 _buildAboutCard(data['bio']),
                 const SizedBox(height: 16),
-                _buildSkillsCard(data['skills']),
+                _buildEducationSection(data['education']),
                 const SizedBox(height: 16),
-                _buildSectionCard('Education', Icons.school_rounded, data['education']),
+                _buildExperienceSection(data['experience']),
                 const SizedBox(height: 16),
-                _buildSectionCard('Experience', Icons.work_rounded, data['experience']),
+                _buildCertificateSection(data['certificates']),
+                const SizedBox(height: 16),
+                _buildLinksSection(data),
                 const SizedBox(height: 24),
-                PrimaryButton(
-                  label: _isGeneratingPdf ? 'Generating CV...' : 'Download Professional CV',
-                  icon: Icons.file_download_outlined,
-                  onTap: () => _generateAndDownloadCv(data),
-                  isLoading: _isGeneratingPdf,
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: _isGeneratingPdf ? null : () => _generateAndDownloadCv(data),
+                    icon: _isGeneratingPdf 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.file_download_outlined),
+                    label: Text(_isGeneratingPdf ? 'Generating CV...' : 'Download Professional CV'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1B4332),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 40),
               ],
@@ -156,34 +185,47 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
   }
 
   Widget _buildProfileHeader(Map<String, dynamic> data) {
-    String name = '${data['firstName'] ?? 'User'} ${data['lastName'] ?? ''}';
-    String imagePath = data['profileImage'] ?? '';
+    String name = '${data['firstName'] ?? 'User'} ${data['lastName'] ?? ''}'.trim();
+    if (name.isEmpty) name = 'No Name Set';
+    String? photoUrl = data['photoUrl'];
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 40,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: imagePath.isNotEmpty ? FileImage(File(imagePath)) : null,
-            child: imagePath.isEmpty ? const Icon(Icons.person, size: 40, color: AppColors.primary) : null,
+            radius: 42,
+            backgroundColor: const Color(0xFFF3F4F6),
+            backgroundImage: (photoUrl != null && photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
+            child: (photoUrl == null || photoUrl.isEmpty) 
+                ? const Icon(Icons.person, size: 42, color: Color(0xFF9CA3AF)) 
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                Text(data['email'] ?? '', style: const TextStyle(fontSize: 13, color: AppColors.textGray)),
-                Text(data['phone'] ?? '', style: const TextStyle(fontSize: 13, color: AppColors.textGray)),
+                Text(name, 
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+                Text(data['title'] ?? 'software engineer', 
+                  style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280))),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.email_outlined, size: 16, color: Color(0xFF6B7280)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(data['email'] ?? user?.email ?? '', 
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -196,47 +238,44 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
     return _BaseCard(
       title: 'About',
       child: Text(
-        bio ?? 'No bio added yet.',
-        style: const TextStyle(fontSize: 14, color: AppColors.textGray, height: 1.5),
+        (bio == null || bio.isEmpty) ? 'No bio added yet.' : bio,
+        style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.6),
       ),
     );
   }
 
-  Widget _buildSkillsCard(List? skills) {
+  Widget _buildEducationSection(List? items) {
     return _BaseCard(
-      title: 'Skills',
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: (skills ?? []).map((s) => Chip(
-          label: Text(s['name']),
-          backgroundColor: AppColors.primary.withOpacity(0.05),
-          labelStyle: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
-          padding: EdgeInsets.zero,
-        )).toList(),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard(String title, IconData icon, List? items) {
-    return _BaseCard(
-      title: title,
+      title: 'Education',
       child: (items == null || items.isEmpty)
-          ? Text('No $title details added.', style: const TextStyle(color: AppColors.textLight, fontSize: 13))
+          ? const Text('No education details added.', 
+              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14, fontStyle: FontStyle.normal))
           : Column(
-              children: items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+              children: items.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(icon, size: 18, color: AppColors.primary),
-                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B4332).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.school_outlined, size: 20, color: Color(0xFF1B4332)),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item['degree'] ?? item['role'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text(item['institute'] ?? item['company'] ?? '', style: const TextStyle(fontSize: 12, color: AppColors.textGray)),
+                          Text(e['degree'] ?? '', 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF111827))),
+                          const SizedBox(height: 2),
+                          Text(e['institution'] ?? '', 
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563))),
+                          Text('${e['startDate'] ?? ''} - ${e['endDate'] ?? 'Present'}', 
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
                         ],
                       ),
                     ),
@@ -244,6 +283,127 @@ class _ProfilePreviewScreenState extends State<ProfilePreviewScreen> {
                 ),
               )).toList(),
             ),
+    );
+  }
+
+  Widget _buildExperienceSection(List? items) {
+    return _BaseCard(
+      title: 'Work Experience',
+      child: (items == null || items.isEmpty)
+          ? const Text('No experience details added.', 
+              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14))
+          : Column(
+              children: items.map((ex) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B4332).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.business_center_outlined, size: 20, color: Color(0xFF1B4332)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(ex['jobTitle'] ?? '', 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF111827))),
+                          const SizedBox(height: 2),
+                          Text(ex['companyName'] ?? '', 
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563))),
+                          Text('${ex['startDate'] ?? ''} - ${ex['endDate'] ?? 'Present'}', 
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                          if (ex['description'] != null && ex['description'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(ex['description'], 
+                              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.4)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ),
+    );
+  }
+
+  Widget _buildCertificateSection(List? items) {
+    if (items == null || items.isEmpty) return const SizedBox.shrink();
+    return _BaseCard(
+      title: 'Certificates',
+      child: Column(
+        children: items.map((c) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.verified_outlined, size: 20, color: Color(0xFF1B4332)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c['name'] ?? '', 
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF111827))),
+                    Text(c['organization'] ?? '', 
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _buildLinksSection(Map<String, dynamic> data) {
+    bool hasLinks = (data['linkedin'] != null && data['linkedin'].toString().isNotEmpty) ||
+                    (data['github'] != null && data['github'].toString().isNotEmpty) ||
+                    (data['website'] != null && data['website'].toString().isNotEmpty);
+    
+    if (!hasLinks) return const SizedBox.shrink();
+
+    return _BaseCard(
+      title: 'Social & Portfolio Links',
+      child: Column(
+        children: [
+          if (data['linkedin'] != null && data['linkedin'].toString().isNotEmpty)
+            _buildLinkItem(Icons.link, 'LinkedIn', data['linkedin']),
+          if (data['github'] != null && data['github'].toString().isNotEmpty)
+            _buildLinkItem(Icons.code, 'GitHub', data['github']),
+          if (data['website'] != null && data['website'].toString().isNotEmpty)
+            _buildLinkItem(Icons.language, 'Website', data['website']),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkItem(IconData icon, String label, String url) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF1B4332)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                Text(url, 
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF2563EB), decoration: TextDecoration.underline),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -258,12 +418,19 @@ class _BaseCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const Divider(height: 24),
+          Text(title, 
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF111827))),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+          const SizedBox(height: 16),
           child,
         ],
       ),

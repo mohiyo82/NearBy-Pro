@@ -6,7 +6,7 @@
     <application
         android:label="nearby_pro"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
 
         <!-- Google Maps API Key -->
         <!-- Note: Replace YOUR_API_KEY with a valid Google Maps API Key from Google Cloud Console -->

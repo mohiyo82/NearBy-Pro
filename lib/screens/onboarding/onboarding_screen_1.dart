@@ -25,11 +25,10 @@ class OnboardingScreen1 extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 32),
-              Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.08), shape: BoxShape.circle),
-                child: const Icon(Icons.explore_rounded, size: 100, color: AppColors.primary),
+              CircleAvatar(
+                radius: 110,
+                backgroundColor: AppColors.primary.withOpacity(0.08),
+                backgroundImage: const AssetImage('assets/images/onbording_1.jpeg'),
               ),
               const SizedBox(height: 48),
               const Text('Discover Places\nAround You', textAlign: TextAlign.center, style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: AppColors.textDark, height: 1.3)),
