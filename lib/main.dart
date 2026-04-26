@@ -8,71 +8,81 @@ import 'theme/app_theme.dart';
 import 'services/auth_service.dart';
 import 'services/database_service.dart';
 
-// Screens
-import 'screens/splash_screen.dart';
-import 'screens/onboarding_screen_1.dart';
-import 'screens/onboarding_screen_2.dart';
-import 'screens/onboarding_screen_3.dart';
-import 'screens/login_screen.dart';
-import 'screens/signup_screen.dart';
-import 'screens/forgot_password_screen.dart';
-import 'screens/create_profile_screen.dart';
-import 'screens/personal_details_screen.dart';
-import 'screens/education_details_screen.dart';
-import 'screens/skills_selection_screen.dart';
-import 'screens/resume_upload_screen.dart';
-import 'screens/profile_preview_screen.dart';
-import 'screens/home_dashboard_screen.dart';
-import 'screens/global_search_screen.dart';
-import 'screens/category_selection_screen.dart';
-import 'screens/city_selection_screen.dart';
-import 'screens/area_selection_screen.dart';
-import 'screens/distance_filter_screen.dart';
-import 'screens/advanced_filters_screen.dart';
-import 'screens/search_results_loading_screen.dart';
-import 'screens/map_location_picker_screen.dart';
-import 'screens/results_list_view_screen.dart';
-import 'screens/results_map_view_screen.dart';
-import 'screens/single_result_card_detail_screen.dart';
-import 'screens/contact_information_screen.dart';
-import 'screens/save_result_screen.dart';
-import 'screens/similar_places_screen.dart';
-import 'screens/empty_result_screen.dart';
-import 'screens/contact_list_screen.dart';
-import 'screens/contact_detail_screen.dart';
-import 'screens/apply_connect_screen.dart';
-import 'screens/resume_match_preview_screen.dart';
-import 'screens/application_success_screen.dart';
-import 'screens/saved_contacts_screen.dart';
-import 'screens/search_history_screen.dart';
-import 'screens/saved_searches_screen.dart';
-import 'screens/saved_places_screen.dart';
-import 'screens/resume_manager_screen.dart';
-import 'screens/edit_resume_screen.dart';
-import 'screens/profile_analytics_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/theme_settings_screen.dart';
-import 'screens/notification_settings_screen.dart';
-import 'screens/help_support_screen.dart';
-import 'screens/about_app_screen.dart';
-import 'screens/security_settings_screen.dart';
-import 'screens/privacy_settings_screen.dart';
-import 'screens/subscription_plans_screen.dart';
-import 'screens/payment_method_screen.dart';
-import 'screens/permission_request_screen.dart';
-import 'screens/location_disabled_screen.dart';
-import 'screens/internet_error_screen.dart';
-import 'screens/maintenance_screen.dart';
-import 'screens/logout_confirmation_screen.dart';
-import 'screens/account_delete_confirmation_screen.dart';
+// ─── AUTH & ONBOARDING ──────────────────────────────────
+import 'screens/auth/splash_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/signup_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
+import 'screens/auth/logout_confirmation_screen.dart';
+import 'screens/onboarding/onboarding_screen_1.dart';
+import 'screens/onboarding/onboarding_screen_2.dart';
+import 'screens/onboarding/onboarding_screen_3.dart';
+
+// ─── PROFILE SETUP & USER PROFILE ───────────────────────
+import 'screens/profile/create_profile_screen.dart';
+import 'screens/profile/personal_details_screen.dart';
+import 'screens/profile/education_details_screen.dart';
+import 'screens/profile/skills_selection_screen.dart';
+import 'screens/profile/resume_upload_screen.dart';
+import 'screens/profile/profile_preview_screen.dart';
+import 'screens/profile/resume_manager_screen.dart';
+import 'screens/profile/edit_resume_screen.dart';
+import 'screens/profile/edit_profile_screen.dart'; // Import Fix
+import 'screens/profile/profile_analytics_screen.dart';
+
+// ─── MAIN APP FLOW ──────────────────────────────────────
+import 'screens/home/main_wrapper.dart'; 
+import 'screens/home/home_dashboard_screen.dart';
+import 'screens/search/global_search_screen.dart';
+import 'screens/search/category_selection_screen.dart';
+import 'screens/search/city_selection_screen.dart';
+import 'screens/search/area_selection_screen.dart';
+import 'screens/search/distance_filter_screen.dart';
+import 'screens/search/advanced_filters_screen.dart';
+import 'screens/search/map_location_picker_screen.dart';
+import 'screens/search/search_history_screen.dart';
+import 'screens/search/saved_searches_screen.dart';
+
+// ─── RESULTS & ACTIONS ──────────────────────────────────
+import 'screens/results/results_list_view_screen.dart';
+import 'screens/results/results_map_view_screen.dart';
+import 'screens/results/single_result_card_detail_screen.dart';
+import 'screens/results/search_results_loading_screen.dart';
+import 'screens/results/save_result_screen.dart';
+import 'screens/results/similar_places_screen.dart';
+import 'screens/results/empty_result_screen.dart';
+import 'screens/results/contact_information_screen.dart';
+import 'screens/results/contact_list_screen.dart';
+import 'screens/results/contact_detail_screen.dart';
+import 'screens/results/apply_connect_screen.dart';
+import 'screens/results/resume_match_preview_screen.dart';
+import 'screens/results/application_success_screen.dart';
+import 'screens/results/saved_contacts_screen.dart';
+import 'screens/results/saved_places_screen.dart';
+
+// ─── SETTINGS & INFO ────────────────────────────────────
+import 'screens/settings/settings_screen.dart';
+import 'screens/settings/theme_settings_screen.dart';
+import 'screens/settings/notification_settings_screen.dart';
+import 'screens/settings/help_support_screen.dart';
+import 'screens/settings/about_app_screen.dart';
+import 'screens/settings/security_settings_screen.dart';
+import 'screens/settings/privacy_settings_screen.dart';
+import 'screens/settings/subscription_plans_screen.dart';
+import 'screens/settings/payment_method_screen.dart';
+import 'screens/auth/account_delete_confirmation_screen.dart';
+
+// ─── SYSTEM & UX ────────────────────────────────────────
+import 'screens/system/permission_request_screen.dart';
+import 'screens/system/location_disabled_screen.dart';
+import 'screens/system/internet_error_screen.dart';
+import 'screens/system/maintenance_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
     await Firebase.initializeApp();
-    
-    // Crashlytics Setup
     FlutterError.onError = (errorDetails) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
     };
@@ -84,7 +94,6 @@ void main() async {
     debugPrint('Firebase initialization error: $e');
   }
 
-  // Graceful Error Handling (Checklist Point #4)
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -113,7 +122,6 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   
   runApp(
-    // Architecture & State Integrity (Checklist Point #1)
     MultiProvider(
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
@@ -148,7 +156,8 @@ class NearByProApp extends StatelessWidget {
         '/skills-selection': (_) => const SkillsSelectionScreen(),
         '/resume-upload': (_) => const ResumeUploadScreen(),
         '/profile-preview': (_) => const ProfilePreviewScreen(),
-        '/home': (_) => const HomeDashboardScreen(),
+        '/edit-profile': (_) => const EditProfileScreen(), // Route Added
+        '/home': (_) => const MainWrapper(), 
         '/global-search': (_) => const GlobalSearchScreen(),
         '/category-selection': (_) => const CategorySelectionScreen(),
         '/city-selection': (_) => const CitySelectionScreen(),

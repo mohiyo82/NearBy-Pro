@@ -1,10 +1,11 @@
-plugins {
-    // Check if these are already there, if not, they are usually handled by Flutter
-    id("com.android.application") version "8.1.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.8.22" apply false
-
-    // Add the Google services Gradle plugin as per your instructions
-    id("com.google.gms.google-services") version "4.4.1" apply false
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.google.gms:google-services:4.4.1")
+    }
 }
 
 allprojects {
@@ -14,14 +15,18 @@ allprojects {
     }
 }
 
-rootProject.buildDir = "../build"
+// Fixed build directory path for Kotlin DSL
+rootProject.layout.buildDirectory.set(file("${rootProject.projectDir}/../build"))
+
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    val newBuildDir = rootProject.layout.buildDirectory.dir(project.name)
+    project.layout.buildDirectory.set(newBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }

@@ -1,28 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
 android {
     namespace = "Nearby.pro"
@@ -39,21 +31,21 @@ android {
     }
 
     sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        getByName("main").java.srcDirs("src/main/kotlin")
     }
 
     defaultConfig {
         applicationId = "Nearby.pro"
-        minSdk = 23 // Recommended for modern Firebase features
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutterVersionCode.toInteger()
+        versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
         multiDexEnabled = true
     }
 
     buildTypes {
-        release {
-            signingConfig = signingConfigs.debug
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
@@ -63,11 +55,10 @@ flutter {
 }
 
 dependencies {
-    // Import the Firebase BoM as per your instructions
+    // Correcting Firebase dependencies for Kotlin DSL
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
-
-    // Add dependencies for Firebase products
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:cloud-firestore")
+    implementation("com.google.firebase:firebase-firestore") // Use firebase-firestore instead of cloud-firestore
+    implementation("com.google.firebase:firebase-crashlytics")
 }

@@ -12,7 +12,20 @@
           "package_name": "Nearby.pro"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "965767919189-qn9b5itqgbqmg56t6n9o9aqhh9a0nfu3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "Nearby.pro",
+            "certificate_hash": "c840d92f94d9dfe6795869b6f7926ce47cf38934"
+          }
+        },
+        {
+          "client_id": "965767919189-90inlbdjhkk0kbbfpteijfdqddoelmo6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD1H-9LCNptSR-ezM2MbJIeuObVCJdh-YU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "965767919189-90inlbdjhkk0kbbfpteijfdqddoelmo6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
