@@ -41,7 +41,11 @@ class CategorySelectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Select Category')),
+      appBar: AppBar(
+        title: const Text('All Categories', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _cats.length,
@@ -52,7 +56,13 @@ class CategorySelectionScreen extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(cat.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textGray, letterSpacing: 0.5)),
+                child: Row(
+                  children: [
+                    Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 8),
+                    Text(cat.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                  ],
+                ),
               ),
               GridView.builder(
                 shrinkWrap: true,
@@ -67,17 +77,21 @@ class CategorySelectionScreen extends StatelessWidget {
                 itemBuilder: (_, j) {
                   final sub = cat.subs[j];
                   return GestureDetector(
-                    onTap: () {},
+                    onTap: () => Navigator.pushNamed(context, '/search-loading', arguments: sub.label),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
                       ),
                       child: Row(children: [
-                        Icon(sub.icon, color: sub.color, size: 22),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(color: sub.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          child: Icon(sub.icon, color: sub.color, size: 20),
+                        ),
                         const SizedBox(width: 10),
                         Expanded(child: Text(sub.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark))),
                       ]),
@@ -85,7 +99,7 @@ class CategorySelectionScreen extends StatelessWidget {
                   );
                 },
               ),
-              if (i < _cats.length - 1) const Divider(height: 24),
+              const SizedBox(height: 16),
             ],
           );
         },

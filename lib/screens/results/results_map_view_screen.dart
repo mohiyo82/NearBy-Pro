@@ -1,228 +1,194 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../theme/app_theme.dart';
 
-class ResultsMapViewScreen extends StatelessWidget {
+class ResultsMapViewScreen extends StatefulWidget {
   const ResultsMapViewScreen({super.key});
+
+  @override
+  State<ResultsMapViewScreen> createState() => _ResultsMapViewScreenState();
+}
+
+class _ResultsMapViewScreenState extends State<ResultsMapViewScreen> {
+  final MapController _mapController = MapController();
+  LatLng _center = const LatLng(31.5204, 74.3587);
+  double _radius = 25.0;
+  String _query = '';
+  List<Map<String, dynamic>> _jobsInRange = [];
+  bool _isLoading = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)!.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      _query = args['query'] ?? '';
+      _radius = (args['radius'] ?? 25.0).toDouble();
+      _center = args['center'] ?? const LatLng(31.5204, 74.3587);
+    }
+    _loadJobs();
+  }
+
+  Future<void> _loadJobs() async {
+    setState(() => _isLoading = true);
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('jobs')
+          .where('status', isEqualTo: 'active')
+          .get();
+
+      final List<Map<String, dynamic>> found = [];
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['latitude'] != null && data['longitude'] != null) {
+          double dist = Geolocator.distanceBetween(
+            _center.latitude, _center.longitude,
+            data['latitude'], data['longitude']
+          ) / 1000;
+
+          if (dist <= _radius) {
+            data['id'] = doc.id;
+            data['distance'] = dist;
+            // Also match search query if present
+            if (_query.isEmpty ||
+                (data['title'] ?? '').toString().toLowerCase().contains(_query.toLowerCase()) ||
+                (data['companyName'] ?? '').toString().toLowerCase().contains(_query.toLowerCase())) {
+              found.add(data);
+            }
+          }
+        }
+      }
+      setState(() {
+        _jobsInRange = found;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Map View', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            Text('Software Houses • Lahore', style: TextStyle(fontSize: 11, color: Colors.white70)),
+            Text(_query.isEmpty ? 'Nearby Jobs' : _query, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('${_jobsInRange.length} jobs in ${_radius.round()}km', style: const TextStyle(fontSize: 11, color: Colors.white70)),
           ],
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.list_rounded), onPressed: () => Navigator.pop(context), tooltip: 'List View'),
-          IconButton(icon: const Icon(Icons.tune_rounded), onPressed: () {}),
-        ],
+        backgroundColor: const Color(0xFF1B4332),
+        foregroundColor: Colors.white,
       ),
       body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.green.shade50, Colors.blue.shade50, Colors.green.shade100],
-              ),
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _center,
+              initialZoom: 11.0,
             ),
-            child: CustomPaint(painter: _MapGridPainter()),
-          ),
-          Center(
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.secondary, width: 2),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'Nearby.pro',
               ),
-              child: const Icon(Icons.my_location_rounded, color: AppColors.secondary, size: 28),
-            ),
-          ),
-          ..._dummyPins().map((p) => Positioned(left: p['x']!, top: p['y']!, child: _MapPin(label: p['label']!))),
-          Positioned(
-            top: 12,
-            left: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 12)],
-              ),
-              child: Row(children: [
-                const Icon(Icons.search_rounded, color: AppColors.textGray, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(child: Text('Search in this area', style: TextStyle(fontSize: 14, color: AppColors.textGray))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                  child: const Text('Redo', style: TextStyle(fontSize: 13, color: Colors.white, fontWeight: FontWeight.w600)),
-                ),
-              ]),
-            ),
-          ),
-          Positioned(
-            right: 16,
-            bottom: 180,
-            child: Column(
-              children: [
-                _MapButton(icon: Icons.add_rounded),
-                const SizedBox(height: 8),
-                _MapButton(icon: Icons.remove_rounded),
-                const SizedBox(height: 8),
-                _MapButton(icon: Icons.my_location_rounded),
-                const SizedBox(height: 8),
-                _MapButton(icon: Icons.layers_rounded),
-              ],
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 180,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, -4))],
-              ),
-              child: Column(
-                children: [
-                  Container(margin: const EdgeInsets.only(top: 10), width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(children: [
-                      Text('0 places found', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                      Spacer(),
-                      Text('in 25 km radius', style: TextStyle(fontSize: 12, color: AppColors.textGray)),
-                    ]),
-                  ),
-                  SizedBox(
-                    height: 110,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: 5,
-                      itemBuilder: (_, i) => Container(
-                        width: 200,
-                        margin: const EdgeInsets.only(right: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Company Name', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textDark)),
-                          const SizedBox(height: 4),
-                          const Text('Software House', style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 4),
-                          const Row(children: [
-                            Icon(Icons.location_on_rounded, size: 12, color: AppColors.textGray),
-                            SizedBox(width: 2),
-                            Text('0 km away', style: TextStyle(fontSize: 11, color: AppColors.textGray)),
-                            Spacer(),
-                            Icon(Icons.star_rounded, size: 12, color: AppColors.warning),
-                            Text('0.0', style: TextStyle(fontSize: 11, color: AppColors.textGray)),
-                          ]),
-                        ]),
-                      ),
-                    ),
+              CircleLayer(
+                circles: [
+                  CircleMarker(
+                    point: _center,
+                    radius: _radius * 1000,
+                    useRadiusInMeter: true,
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderColor: AppColors.primary.withValues(alpha: 0.3),
+                    borderStrokeWidth: 2,
                   ),
                 ],
               ),
-            ),
+              MarkerLayer(
+                markers: [
+                  // User Center Marker
+                  Marker(
+                    point: _center,
+                    width: 40, height: 40,
+                    child: const Icon(Icons.my_location, color: Colors.blue, size: 30),
+                  ),
+                  // Job Markers
+                  ..._jobsInRange.map((job) => Marker(
+                    point: LatLng(job['latitude'], job['longitude']),
+                    width: 50, height: 50,
+                    child: GestureDetector(
+                      onTap: () => _showJobSnippet(job),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: AppColors.primary, width: 2), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)]),
+                        child: job['companyLogo'] != null ? ClipOval(child: Image.network(job['companyLogo'])) : const Icon(Icons.work, color: AppColors.primary, size: 20),
+                      ),
+                    ),
+                  )),
+                ],
+              ),
+            ],
+          ),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
+
+          Positioned(
+            bottom: 20, left: 16, right: 16,
+            child: _jobsInRange.isEmpty && !_isLoading
+              ? const SizedBox.shrink()
+              : const SizedBox.shrink(), // Snapshot will be shown via _showJobSnippet
           ),
         ],
       ),
     );
   }
 
-  List<Map<String, double>> _dummyPins() => [
-    {'x': 80, 'y': 180, 'label': 1},
-    {'x': 220, 'y': 130, 'label': 2},
-    {'x': 300, 'y': 280, 'label': 3},
-    {'x': 140, 'y': 340, 'label': 4},
-    {'x': 260, 'y': 420, 'label': 5},
-  ].map((e) => {'x': e['x']!.toDouble(), 'y': e['y']!.toDouble(), 'label': e['label']!.toDouble()}).toList();
-}
-
-class _MapPin extends StatelessWidget {
-  final double label;
-  const _MapPin({required this.label});
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        width: 44,
-        height: 28,
-        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(14)),
-        child: Center(child: Text('0 km', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700))),
+  void _showJobSnippet(Map<String, dynamic> job) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 15)]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(width: 60, height: 60, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(15)), child: job['companyLogo'] != null ? ClipRRect(borderRadius: BorderRadius.circular(15), child: Image.network(job['companyLogo'], fit: BoxFit.cover)) : const Icon(Icons.business, color: AppColors.primary)),
+                const SizedBox(width: 16),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(job['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), Text(job['companyName'] ?? '', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600))])),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(job['location'] ?? '', style: const TextStyle(color: Colors.grey)),
+                const Spacer(),
+                Text('${job['distance'].toStringAsFixed(1)} km away', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/result-detail', arguments: job),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B4332), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('View Full Details', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
       ),
-      CustomPaint(size: const Size(12, 8), painter: _PinTailPainter()),
-    ],
-  );
-}
-
-class _PinTailPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = AppColors.primary;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0)
-      ..close();
-    canvas.drawPath(path, paint);
+    );
   }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
-
-class _MapButton extends StatelessWidget {
-  final IconData icon;
-  const _MapButton({required this.icon});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 44,
-    height: 44,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      shape: BoxShape.circle,
-      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 8)],
-    ),
-    child: Icon(icon, size: 20, color: AppColors.textGray),
-  );
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.green.withValues(alpha: 0.07)
-      ..strokeWidth = 1;
-    for (double x = 0; x < size.width; x += 40) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += 40) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }

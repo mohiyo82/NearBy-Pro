@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'dart:io';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,6 +16,43 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // ─── Record Session Details ───
+  Future<void> _recordSession(String uid) async {
+    try {
+      String locationName = "Unknown Location";
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+          timeLimit: const Duration(seconds: 5),
+        );
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, 
+          position.longitude
+        );
+        if (placemarks.isNotEmpty) {
+          Placemark place = placemarks[0];
+          locationName = "${place.locality}, ${place.subAdministrativeArea}";
+        }
+      } catch (_) {}
+
+      String deviceName = Platform.isAndroid ? "Android Device" : "iOS Device";
+      String deviceId = uid + DateTime.now().millisecondsSinceEpoch.toString();
+
+      await _firestore.collection('users').doc(uid).collection('sessions').add({
+        'id': deviceId,
+        'deviceName': deviceName,
+        'deviceType': 'phone',
+        'location': locationName,
+        'lastActive': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'isCurrentDevice': true,
+        'ipAddress': '192.168.1.1', // Placeholder
+      });
+    } catch (e) {
+      print("Error recording session: $e");
+    }
+  }
 
   // ─── Google Sign In ───
   Future<UserCredential?> signInWithGoogle() async {
@@ -34,9 +74,13 @@ class AuthService {
           'phone': userCredential.user!.phoneNumber ?? '',
           'profileImage': userCredential.user!.photoURL ?? '',
           'userType': 'other',
+          'bio': '',
+          'followersCount': 0, // Initialized
+          'followingCount': 0, // Initialized
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
+      _recordSession(userCredential.user!.uid);
       return userCredential;
     } catch (e) {
       print('Google Sign-In Error Details: $e');
@@ -49,14 +93,9 @@ class AuthService {
     User? user = _auth.currentUser;
     if (user == null) throw Exception('No user logged in');
 
-    // 1. Re-authenticate user to verify password before deletion
     AuthCredential credential = EmailAuthProvider.credential(email: user.email!, password: password);
     await user.reauthenticateWithCredential(credential);
-
-    // 2. Delete data from Firestore
     await _firestore.collection('users').doc(user.uid).delete();
-
-    // 3. Delete user from Firebase Auth
     await user.delete();
   }
 
@@ -72,6 +111,7 @@ class AuthService {
     required String userType,
     String? dob,
     String? profileImage,
+    String? bio,
   }) async {
     UserCredential userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
     await _firestore.collection('users').doc(userCredential.user!.uid).set({
@@ -82,13 +122,19 @@ class AuthService {
       'userType': userType,
       'dob': dob,
       'profileImage': profileImage,
+      'bio': bio ?? '',
+      'followersCount': 0, // Initialized
+      'followingCount': 0, // Initialized
       'createdAt': FieldValue.serverTimestamp(),
     });
+    _recordSession(userCredential.user!.uid);
     return userCredential;
   }
 
   Future<UserCredential> signIn(String email, String password) async {
-    return await _auth.signInWithEmailAndPassword(email: email.trim(), password: password.trim());
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: email.trim(), password: password.trim());
+    _recordSession(userCredential.user!.uid);
+    return userCredential;
   }
 
   Future<void> signOut() async {

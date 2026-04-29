@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/cloudinary_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/phone_input_field.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -40,6 +41,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   String? _photoUrl;
   File? _imageFile;
+  String _selectedCountryCode = '+92';
 
   @override
   void initState() {
@@ -62,7 +64,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _lNameC.text = d['lastName'] ?? '';
           _titleC.text = d['title'] ?? '';
           _emailC.text = d['email'] ?? user!.email ?? '';
-          _phoneC.text = d['phone'] ?? '';
+          
+          String phone = d['phone'] ?? '';
+          if (phone.startsWith('+92')) {
+            _selectedCountryCode = '+92';
+            _phoneC.text = phone.substring(3);
+          } else if (phone.startsWith('+1')) {
+            _selectedCountryCode = '+1';
+            _phoneC.text = phone.substring(2);
+          } else {
+             _phoneC.text = phone;
+          }
+
           _bioC.text = d['bio'] ?? '';
           
           _linkedinC.text = d['linkedin'] ?? '';
@@ -132,7 +145,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'name': '${_fNameC.text.trim()} ${_lNameC.text.trim()}',
         'title': _titleC.text.trim(),
         'email': _emailC.text.trim(),
-        'phone': _phoneC.text.trim(),
+        'phone': '$_selectedCountryCode${_phoneC.text.trim()}',
         'bio': _bioC.text.trim(),
         'linkedin': _linkedinC.text.trim(),
         'github': _githubC.text.trim(),
@@ -306,7 +319,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 12),
           _buildTextField(_titleC, 'Professional Title (e.g. Software Engineer)', validator: (v) => v!.isEmpty ? 'Required' : null),
           const SizedBox(height: 12),
-          _buildTextField(_phoneC, 'Phone Number', keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Required' : null),
+          PhoneInputField(
+            controller: _phoneC,
+            onCountryChanged: (c) => setState(() => _selectedCountryCode = c.code),
+          ),
         ],
       ),
     );

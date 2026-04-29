@@ -35,7 +35,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   void _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 3));
+    // Updated timer to 2 seconds as requested
+    await Future.delayed(const Duration(seconds: 2));
     
     if (mounted) {
       await _controller.forward();

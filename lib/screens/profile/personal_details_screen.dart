@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/shared_widgets.dart';
+import '../../widgets/phone_input_field.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -24,6 +25,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   
   String? _selectedGender;
   bool _isLoading = false;
+  String _selectedCountryCode = '+92';
 
   final User? user = FirebaseAuth.instance.currentUser;
 
@@ -54,7 +56,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           'dob': _dobController.text,
           'gender': _selectedGender,
           'cnic': _cnicController.text.trim(),
-          'phone': _phoneController.text.trim(),
+          'phone': '$_selectedCountryCode${_phoneController.text.trim()}',
           'city': _cityController.text.trim(),
           'address': _addressController.text.trim(),
         });
@@ -146,7 +148,12 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
               const SizedBox(height: 20),
               _buildField('CNIC / National ID', 'XXXXX-XXXXXXX-X', _cnicController, (val) => val!.isEmpty ? 'Required' : null, icon: Icons.badge_outlined),
               const SizedBox(height: 20),
-              _buildField('Phone Number', '+92 --- -------', _phoneController, (val) => val!.isEmpty ? 'Required' : null, icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+              PhoneInputField(
+                controller: _phoneController,
+                onCountryChanged: (country) {
+                  setState(() => _selectedCountryCode = country.code);
+                },
+              ),
               const SizedBox(height: 20),
               _buildField('Current City', 'Your city', _cityController, (val) => val!.isEmpty ? 'Required' : null, icon: Icons.location_city_outlined),
               const SizedBox(height: 20),

@@ -17,6 +17,8 @@ import 'screens/auth/logout_confirmation_screen.dart';
 import 'screens/onboarding/onboarding_screen_1.dart';
 import 'screens/onboarding/onboarding_screen_2.dart';
 import 'screens/onboarding/onboarding_screen_3.dart';
+import 'screens/auth/two_factor_setup_screen.dart';
+import 'screens/auth/otp_verification_screen.dart';
 
 // ─── PROFILE SETUP & USER PROFILE ───────────────────────
 import 'screens/profile/create_profile_screen.dart';
@@ -70,7 +72,12 @@ import 'screens/settings/security_settings_screen.dart';
 import 'screens/settings/privacy_settings_screen.dart';
 import 'screens/settings/subscription_plans_screen.dart';
 import 'screens/settings/payment_method_screen.dart';
-import 'screens/settings/change_password_screen.dart'; // Import Added
+import 'screens/settings/change_password_screen.dart'; 
+import 'screens/settings/general_preferences_screen.dart';
+import 'screens/company/register_company_screen.dart';
+import 'screens/company/company_profile_screen.dart';
+import 'screens/company/post_job_screen.dart';
+import 'screens/company/create_post_screen.dart';
 import 'screens/auth/account_delete_confirmation_screen.dart';
 
 // ─── SYSTEM & UX ────────────────────────────────────────
@@ -143,6 +150,15 @@ class NearByProApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       initialRoute: '/splash',
+      onGenerateRoute: (settings) {
+        if (settings.name == '/company-profile') {
+          final args = settings.arguments as String;
+          return MaterialPageRoute(
+            builder: (context) => CompanyProfileScreen(companyId: args),
+          );
+        }
+        return null;
+      },
       routes: {
         '/splash': (_) => const SplashScreen(),
         '/onboarding1': (_) => const OnboardingScreen1(),
@@ -151,6 +167,8 @@ class NearByProApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/signup': (_) => const SignupScreen(),
         '/forgot-password': (_) => const ForgotPasswordScreen(),
+        '/two-factor-setup': (_) => const TwoFactorSetupScreen(),
+        '/otp-verification': (_) => const OtpVerificationScreen(),
         '/create-profile': (_) => const CreateProfileScreen(),
         '/personal-details': (_) => const PersonalDetailsScreen(),
         '/education-details': (_) => const EducationDetailsScreen(),
@@ -187,6 +205,10 @@ class NearByProApp extends StatelessWidget {
         '/edit-resume': (_) => const EditResumeScreen(),
         '/profile-analytics': (_) => const ProfileAnalyticsScreen(),
         '/settings': (_) => const SettingsScreen(),
+        '/general-preferences': (_) => const GeneralPreferencesScreen(),
+        '/register-company': (_) => const RegisterCompanyScreen(),
+        '/post-job': (_) => const PostJobScreen(),
+        '/create-post': (_) => const CreatePostScreen(),
         '/theme-settings': (_) => const ThemeSettingsScreen(),
         '/notification-settings': (_) => const NotificationSettingsScreen(),
         '/help-support': (_) => const HelpSupportScreen(),
@@ -195,7 +217,7 @@ class NearByProApp extends StatelessWidget {
         '/privacy-settings': (_) => const PrivacySettingsScreen(),
         '/subscriptions': (_) => const SubscriptionPlansScreen(),
         '/payment-method': (_) => const PaymentMethodScreen(),
-        '/change-password': (_) => const ChangePasswordScreen(), // Route Added
+        '/change-password': (_) => const ChangePasswordScreen(),
         '/permission': (_) => const PermissionRequestScreen(),
         '/location-disabled': (_) => const LocationDisabledScreen(),
         '/internet-error': (_) => const InternetErrorScreen(),

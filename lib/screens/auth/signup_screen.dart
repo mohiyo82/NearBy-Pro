@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/phone_input_field.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -31,9 +31,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _agreedToTerms = false;
   File? _profileImage;
   String? _errorMessage;
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String _selectedCountryCode = '+92';
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
@@ -66,26 +64,28 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final authService = Provider.of<AuthService>(context, listen: false);
+      
+      await authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
+        name: _nameController.text.trim(),
+        phone: '$_selectedCountryCode${_phoneController.text.trim()}',
+        userType: _selectedUserType ?? 'other',
+        dob: _dobController.text,
+        profileImage: _profileImage?.path ?? '',
+        bio: '',
       );
 
-      await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'uid': userCredential.user!.uid,
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'dob': _dobController.text,
-        'userType': _selectedUserType,
-        'profileImage': _profileImage?.path ?? '', 
-        'bio': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account created! Please login.'), backgroundColor: Colors.green));
-        Navigator.pushReplacementNamed(context, '/login');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigate to home or personal details as per your flow
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -98,7 +98,7 @@ class _SignupScreenState extends State<SignupScreen> {
         }
       });
     } catch (e) {
-      setState(() => _errorMessage = 'An unexpected error occurred.');
+      setState(() => _errorMessage = 'Signup failed. Please check your internet connection.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -195,9 +195,12 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(controller: _dobController, readOnly: true, onTap: _selectDate, decoration: const InputDecoration(hintText: 'Select your birth date', prefixIcon: Icon(Icons.calendar_today_outlined, color: AppColors.textGray)), validator: (val) => val == null || val.isEmpty ? 'Required' : null),
               const SizedBox(height: 20),
               
-              _label('Phone Number'),
-              const SizedBox(height: 8),
-              TextFormField(controller: _phoneController, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '+92 --- -------', prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textGray)), validator: (val) => val == null || val.isEmpty ? 'Phone is required' : null),
+              PhoneInputField(
+                controller: _phoneController,
+                onCountryChanged: (country) {
+                  setState(() => _selectedCountryCode = country.code);
+                },
+              ),
               const SizedBox(height: 20),
               
               _label('Password'),
