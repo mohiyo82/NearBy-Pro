@@ -26,10 +26,26 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   final _ibanC = TextEditingController();
 
   final List<Map<String, String>> _methods = [
-    {'id': 'easypaisa', 'title': 'Easypaisa', 'icon': 'assets/images/easypaisa_logo.png'},
-    {'id': 'jazzcash', 'title': 'JazzCash', 'icon': 'assets/images/jazz_logo.png'},
-    {'id': 'meezan', 'title': 'Meezan Bank', 'icon': 'assets/images/meezan_logo.png'},
-    {'id': 'card', 'title': 'Credit/Debit Card', 'icon': 'assets/images/credit_logo.jpg'},
+    {
+      'id': 'easypaisa', 
+      'title': 'Easypaisa', 
+      'icon': 'assets/images/easypaisa_logo.png'
+    },
+    {
+      'id': 'jazzcash', 
+      'title': 'JazzCash', 
+      'icon': 'assets/images/jazz_logo.png'
+    },
+    {
+      'id': 'meezan', 
+      'title': 'Meezan Bank', 
+      'icon': 'assets/images/meezan_logo.png'
+    },
+    {
+      'id': 'card', 
+      'title': 'Credit/Debit Card', 
+      'icon': 'assets/images/credit_logo.jpg'
+    },
   ];
 
   @override
@@ -182,11 +198,15 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             children: [
               const Text('Select Payment Method', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 16),
+              
               ..._methods.map((method) => _buildMethodTile(method)).toList(),
+              
               const SizedBox(height: 32),
               const Text('Enter Details', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 16),
+              
               _buildDynamicFields(),
+              
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -233,11 +253,19 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         child: Row(
           children: [
             Container(
-              width: 45, height: 45,
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10)),
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.asset(method['icon']!, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Icon(Icons.payment)),
+                child: Image.asset(
+                  method['icon']!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => Icon(_getFallbackIcon(method['id']!), color: const Color(0xFF1B4332)),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -253,6 +281,15 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         ),
       ),
     );
+  }
+
+  IconData _getFallbackIcon(String id) {
+    switch (id) {
+      case 'easypaisa': return Icons.account_balance_wallet_rounded;
+      case 'jazzcash': return Icons.wallet_rounded;
+      case 'meezan': return Icons.account_balance_rounded;
+      default: return Icons.credit_card_rounded;
+    }
   }
 
   Widget _buildDynamicFields() {
@@ -301,6 +338,9 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1B4332), width: 1.5)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       validator: (v) => v!.isEmpty ? 'Required' : null,
     );
