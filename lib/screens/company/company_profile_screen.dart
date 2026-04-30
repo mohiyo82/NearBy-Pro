@@ -43,7 +43,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
     _employeeCountC = TextEditingController();
     _websiteC = TextEditingController();
     _descriptionC = TextEditingController();
+
     _checkFollowStatus();
+    _logPageView(); // Analytics: Track profile views
   }
 
   @override
@@ -57,6 +59,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
     _websiteC.dispose();
     _descriptionC.dispose();
     super.dispose();
+  }
+
+  Future<void> _logPageView() async {
+    // Only log view if it's NOT the company owner viewing their own page
+    await _dbService.logProfileView(widget.companyId);
   }
 
   Future<void> _checkFollowStatus() async {
@@ -413,7 +420,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
                         _buildHomeTab(data, canEdit),
                         _buildAboutTab(data),
                         _buildPostsTab(canEdit),
-                        _buildJobsTab(),
+                        _buildJobsTab(canEdit),
                       ],
                     ),
                   ),
@@ -799,7 +806,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
     ),
   );
 
-  Widget _buildJobsTab() {
+  Widget _buildJobsTab(bool canEdit) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('jobs')
@@ -821,7 +828,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
           padding: const EdgeInsets.all(16),
           itemCount: jobs.length,
           itemBuilder: (context, index) {
-            final job = jobs[index].data() as Map<String, dynamic>;
+            final jobDoc = jobs[index];
+            final jobId = jobDoc.id;
+            final job = jobDoc.data() as Map<String, dynamic>;
             return Card(
               color: const Color(0xFF1E1E1E),
               margin: const EdgeInsets.only(bottom: 12),
@@ -836,13 +845,86 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> with Single
                   padding: const EdgeInsets.only(top: 4),
                   child: Text('${job['jobType']} • ${job['workMode']}', style: const TextStyle(color: Colors.white54, fontSize: 13)),
                 ),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.blueAccent),
+                trailing: canEdit
+                  ? PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.white54),
+                      color: const Color(0xFF2A2A2A),
+                      onSelected: (val) {
+                        if (val == 'edit') _showEditJobDialog(jobId, job);
+                        if (val == 'delete') _showDeleteJobDialog(jobId);
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(value: 'edit', child: Text('Edit Job', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 'delete', child: Text('Delete Job', style: TextStyle(color: Colors.red))),
+                      ],
+                    )
+                  : const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.blueAccent),
                 onTap: () => Navigator.pushNamed(context, '/result-detail', arguments: job),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  void _showEditJobDialog(String jobId, Map<String, dynamic> job) {
+    final titleC = TextEditingController(text: job['title']);
+    final descC = TextEditingController(text: job['description']);
+    final salaryC = TextEditingController(text: job['salary']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Edit Job Opening', style: TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildEditField('Job Title', titleC),
+              _buildEditField('Description', descC, maxLines: 4),
+              _buildEditField('Salary', salaryC),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await _dbService.updateJob(jobId, {
+                'title': titleC.text.trim(),
+                'description': descC.text.trim(),
+                'salary': salaryC.text.trim(),
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteJobDialog(String jobId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Delete Job', style: TextStyle(color: Colors.white)),
+        content: const Text('Are you sure? This will remove the job and its linked post.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              await _dbService.deleteJob(jobId);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 }

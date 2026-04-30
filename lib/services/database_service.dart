@@ -6,6 +6,20 @@ class DatabaseService {
   
   String? get uid => FirebaseAuth.instance.currentUser?.uid;
 
+  // ─── PROFILE VIEWS ──────────────────────────────────────────
+  
+  Future<void> logProfileView(String targetCompanyId) async {
+    final currentUid = uid;
+    // Don't count if company is viewing their own profile or if no user logged in
+    if (currentUid == null || currentUid == targetCompanyId) return;
+
+    final companyRef = _firestore.collection('users').doc(targetCompanyId);
+    
+    await companyRef.set({
+      'profileViews': FieldValue.increment(1),
+    }, SetOptions(merge: true));
+  }
+
   // ─── SEARCH HISTORY & TRENDING ──────────────────────────────
   
   Future<void> addSearchHistory(String query) async {
@@ -172,6 +186,26 @@ class DatabaseService {
     await batch.commit();
   }
 
+  Future<void> deleteJob(String jobId) async {
+    final batch = _firestore.batch();
+    batch.delete(_firestore.collection('jobs').doc(jobId));
+    
+    // Also delete the corresponding social post if it exists
+    final posts = await _firestore.collection('posts').where('jobId', isEqualTo: jobId).get();
+    for (var doc in posts.docs) {
+      batch.delete(doc.reference);
+    }
+    
+    await batch.commit();
+  }
+
+  Future<void> updateJob(String jobId, Map<String, dynamic> updates) async {
+    await _firestore.collection('jobs').doc(jobId).update({
+      ...updates,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> recordApplication(Map<String, dynamic> applicationData) async {
     final currentUid = uid;
     if (currentUid == null) return;
@@ -221,7 +255,6 @@ class DatabaseService {
     await batch.commit();
   }
 
-  // ... (rest of the file remains same)
   // ─── FEED & POSTS ───────────────────────────────────────────
 
   Future<void> createPost(Map<String, dynamic> postData) async {
@@ -317,6 +350,7 @@ class DatabaseService {
         return placesCount + jobsCount;
       }
       if (collectionName == 'applications') return data['applicationsCount'] ?? 0;
+      if (collectionName == 'profile_views') return data['profileViews'] ?? 0;
       return 0;
     });
   }

@@ -51,7 +51,7 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.work_history_outlined, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
+                        Icon(Icons.work_history_outlined, size: 64, color: Colors.grey.withOpacity(0.3)),
                         const SizedBox(height: 16),
                         const Text('No live jobs posted yet.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                       ],
@@ -71,7 +71,6 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
               },
             ),
           ),
-          const SizedBox(height: 80),
         ],
       ),
     );
@@ -82,7 +81,7 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5))),
+        border: Border(bottom: BorderSide(color: AppColors.border.withOpacity(0.5))),
       ),
       child: const Row(
         children: [
@@ -110,8 +109,8 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: AppColors.border.withOpacity(0.8)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -120,7 +119,7 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
               Container(
                 width: 52, height: 52,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1B4332).withValues(alpha: 0.08),
+                  color: const Color(0xFF1B4332).withOpacity(0.08),
                   borderRadius: BorderRadius.circular(15),
                   image: (job['companyLogo'] != null && job['companyLogo'].isNotEmpty)
                     ? DecorationImage(image: NetworkImage(job['companyLogo']), fit: BoxFit.cover)
@@ -135,8 +134,18 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(job['title'] ?? 'Job Role', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textDark), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(job['companyName'] ?? 'Verified Company', style: const TextStyle(color: Color(0xFF1B4332), fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text(
+                      job['title'] ?? 'Job Role', 
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textDark), 
+                      maxLines: 1, 
+                      overflow: TextOverflow.ellipsis
+                    ),
+                    Text(
+                      job['companyName'] ?? 'Verified Company', 
+                      style: const TextStyle(color: Color(0xFF1B4332), fontWeight: FontWeight.w600, fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -160,8 +169,15 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
             children: [
               const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Text(job['location'] ?? 'Location', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              const Spacer(),
+              Expanded(
+                child: Text(
+                  job['location'] ?? 'Location', 
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(timeStr, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w500)),
             ],
           ),
@@ -170,9 +186,9 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _badge(job['jobType'] ?? 'Full-time'),
+              Flexible(child: _badge(job['jobType'] ?? 'Full-time')),
               const SizedBox(width: 8),
-              _badge(job['workMode'] ?? 'On-site'),
+              Flexible(child: _badge(job['workMode'] ?? 'On-site')),
               const Spacer(),
               ElevatedButton(
                 onPressed: () => Navigator.pushNamed(context, '/result-detail', arguments: job),
@@ -196,10 +212,15 @@ class _JobsDiscoveryScreenState extends State<JobsDiscoveryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.1),
+        color: Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }

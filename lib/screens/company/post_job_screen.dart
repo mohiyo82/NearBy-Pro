@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
 import '../search/map_location_picker_screen.dart';
@@ -23,9 +26,19 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _jobType = 'Full-time';
   String _workMode = 'On-site';
   bool _isLoading = false;
+  File? _imageFile;
 
   final List<String> _jobTypes = ['Full-time', 'Part-time', 'Contract', 'Internship'];
   final List<String> _workModes = ['On-site', 'Remote', 'Hybrid'];
+
+  Future<void> _pickImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
+  }
 
   Future<void> _pickLocation() async {
     final result = await Navigator.push(
@@ -41,6 +54,21 @@ class _PostJobScreenState extends State<PostJobScreen> {
     }
   }
 
+  Future<String?> _uploadJobImage() async {
+    if (_imageFile == null) return null;
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('job_images')
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await ref.putFile(_imageFile!);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Error uploading image: $e');
+      return null;
+    }
+  }
+
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCoords == null) {
@@ -51,6 +79,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
     setState(() => _isLoading = true);
 
     try {
+      String? imageUrl;
+      if (_imageFile != null) {
+        imageUrl = await _uploadJobImage();
+      }
+
       final dbService = Provider.of<DatabaseService>(context, listen: false);
       await dbService.postJob({
         'title': _titleC.text.trim(),
@@ -61,6 +94,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         'salary': _salaryC.text.trim(),
         'jobType': _jobType,
         'workMode': _workMode,
+        'imageUrl': imageUrl ?? "", // Added image URL
       });
 
       if (mounted) {
@@ -90,6 +124,33 @@ class _PostJobScreenState extends State<PostJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildLabel('Job Banner / Image'),
+              GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: _imageFile != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.file(_imageFile!, fit: BoxFit.cover),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate_rounded, size: 40, color: Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text('Upload Job Image', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 24),
               _buildLabel('Job Title'),
               _buildTextField(_titleC, 'e.g. Senior Flutter Developer', Icons.work_outline_rounded),
               

@@ -126,7 +126,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04), 
+            color: Colors.black.withOpacity(0.04), 
             blurRadius: 15, 
             offset: const Offset(0, 6)
           )
@@ -138,7 +138,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: const Color(0xFF1B4332).withValues(alpha: 0.08),
+              color: const Color(0xFF1B4332).withOpacity(0.08),
               borderRadius: BorderRadius.circular(18),
               image: (logoUrl.isNotEmpty) ? DecorationImage(image: NetworkImage(logoUrl), fit: BoxFit.cover) : null,
             ),
@@ -198,13 +198,13 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColors.border.withOpacity(0.5)),
         ),
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 12),
@@ -228,13 +228,13 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+              border: Border.all(color: AppColors.border.withOpacity(0.5)),
             ),
             child: Column(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
                   child: Icon(icon, color: color, size: 20),
                 ),
                 const SizedBox(height: 12),
@@ -272,16 +272,16 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: color.withOpacity(0.06),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
+          border: Border.all(color: color.withOpacity(0.15)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(width: 12),
@@ -343,7 +343,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+                border: Border.all(color: AppColors.border.withOpacity(0.7)),
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -397,7 +397,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
             ),
             child: Column(
               children: [
-                Icon(Icons.work_history_outlined, size: 54, color: Colors.grey.withValues(alpha: 0.3)),
+                Icon(Icons.work_history_outlined, size: 54, color: Colors.grey.withOpacity(0.3)),
                 const SizedBox(height: 16),
                 const Text('No active job posts', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 15)),
                 const SizedBox(height: 4),
@@ -419,7 +419,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border.withValues(alpha: 0.7)),
+                border: Border.all(color: AppColors.border.withOpacity(0.7)),
               ),
               child: Column(
                 children: [
@@ -428,7 +428,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1B4332).withValues(alpha: 0.08), 
+                        color: const Color(0xFF1B4332).withOpacity(0.08), 
                         borderRadius: BorderRadius.circular(14)
                       ),
                       child: const Icon(Icons.work_outline, color: Color(0xFF1B4332), size: 22),
@@ -467,7 +467,7 @@ class _CompanyDashboardScreenState extends State<CompanyDashboardScreen> {
                         label: const Text('Manage Applicants', style: TextStyle(fontWeight: FontWeight.bold)),
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF1B4332),
-                          backgroundColor: const Color(0xFF1B4332).withValues(alpha: 0.05),
+                          backgroundColor: const Color(0xFF1B4332).withOpacity(0.05),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),

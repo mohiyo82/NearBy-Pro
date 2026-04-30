@@ -31,29 +31,38 @@ class _MainWrapperState extends State<MainWrapper> {
   // Company Mode Screens
   final List<Widget> _companyScreens = [
     const CompanyDashboardScreen(),
-    const GlobalSearchScreen(), // Companies can also search
-    const JobsDiscoveryScreen(), // See other jobs
+    const GlobalSearchScreen(),
+    const JobsDiscoveryScreen(),
     const SettingsScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    if (_user == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(_user?.uid).snapshots(),
+      stream: FirebaseFirestore.instance.collection('users').doc(_user!.uid).snapshots(),
       builder: (context, snapshot) {
         bool isCompanyMode = false;
+
         if (snapshot.hasData && snapshot.data!.exists) {
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          isCompanyMode = data['activeMode'] == 'company';
+          // Auto-detect company mode if userType is company OR activeMode is company
+          isCompanyMode = data['activeMode'] == 'company' || data['userType'] == 'company';
         }
 
         final screens = isCompanyMode ? _companyScreens : _userScreens;
         final itemCount = screens.length;
 
+        // Reset index if it exceeds screen count (e.g. switching modes)
+        if (_currentIndex >= itemCount) {
+          _currentIndex = 0;
+        }
+
         return Scaffold(
           extendBody: true,
           body: IndexedStack(
-            index: _currentIndex >= itemCount ? 0 : _currentIndex,
+            index: _currentIndex,
             children: screens,
           ),
           bottomNavigationBar: _buildBottomNav(isCompanyMode, itemCount),

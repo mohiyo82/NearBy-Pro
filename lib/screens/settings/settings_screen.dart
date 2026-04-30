@@ -43,7 +43,6 @@ class SettingsScreen extends StatelessWidget {
           String? photoUrl = userData['photoUrl'];
           String activeMode = userData['activeMode'] ?? 'user';
 
-          // Simplified query to avoid index issues
           return StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('company_registrations')
@@ -54,7 +53,6 @@ class SettingsScreen extends StatelessWidget {
               String companyName = userData['tempCompanyName'] ?? 'Your Company';
               
               if (regSnapshot.hasData && regSnapshot.data!.docs.isNotEmpty) {
-                // Get the latest submission by finding max timestamp in code
                 final docs = regSnapshot.data!.docs;
                 final latestDoc = docs.first.data() as Map<String, dynamic>;
                 companyStatus = latestDoc['status'] ?? companyStatus;
@@ -154,6 +152,13 @@ class SettingsScreen extends StatelessWidget {
                   _SettingsGroup(title: 'Support', items: [
                     _SettingItem(icon: Icons.palette_outlined, label: 'Appearance', sub: 'Theme & Colors', color: Colors.green.shade600, onTap: () => Navigator.pushNamed(context, '/theme-settings')),
                     _SettingItem(icon: Icons.notifications_none_rounded, label: 'Notifications', sub: 'Alerts & Sounds', color: Colors.red.shade400, onTap: () => Navigator.pushNamed(context, '/notification-settings')),
+                  ]),
+                  const SizedBox(height: 20),
+
+                  // ─── HELP & TUTORIAL (NEW SECTION ABOVE DANGER ZONE) ───
+                  _SettingsGroup(title: 'Help & Learning', items: [
+                    _SettingItem(icon: Icons.play_circle_filled_rounded, label: 'App Tutorial', sub: 'Watch how to use Nearby Pro', color: AppColors.primary, onTap: () => Navigator.pushNamed(context, '/help-tutorial')),
+                    _SettingItem(icon: Icons.help_outline_rounded, label: 'Help Center', sub: 'FAQs & Contact Support', color: Colors.blueGrey, onTap: () => Navigator.pushNamed(context, '/help-support')),
                   ]),
                   const SizedBox(height: 20),
 

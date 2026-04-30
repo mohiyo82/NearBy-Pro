@@ -53,8 +53,6 @@ class _ResultsListViewScreenState extends State<ResultsListViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
@@ -69,7 +67,7 @@ class _ResultsListViewScreenState extends State<ResultsListViewScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('jobs').where('status', isEqualTo: 'active').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Text('Error loading jobs.'));
+          if (snapshot.hasError) return const Center(child: Text('Error loading jobs.'));
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final jobs = snapshot.data!.docs.map((doc) {
@@ -78,29 +76,24 @@ class _ResultsListViewScreenState extends State<ResultsListViewScreen> {
             return data;
           }).toList();
 
-          // Filter jobs based on query and distance
           final filteredJobs = jobs.where((job) {
             final title = (job['title'] ?? '').toString().toLowerCase();
             final company = (job['companyName'] ?? '').toString().toLowerCase();
             final searchLower = _query.toLowerCase();
-            
             bool matchesQuery = title.contains(searchLower) || company.contains(searchLower);
-            
-            // Location filtering
             double dist = _calculateDistance(job['latitude'], job['longitude']);
             bool withinRange = dist <= _radius || job['latitude'] == null;
-
             return matchesQuery && withinRange;
           }).toList();
 
           if (filteredJobs.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  const Text('No live jobs found for this search.', style: TextStyle(color: Colors.grey)),
+                  Icon(Icons.search_off_rounded, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No live jobs found for this search.', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             );
@@ -113,7 +106,6 @@ class _ResultsListViewScreenState extends State<ResultsListViewScreen> {
               final job = filteredJobs[i];
               return _ProfessionalJobCard(
                 job: job,
-                distance: _calculateDistance(job['latitude'], job['longitude']),
                 onTap: () => Navigator.pushNamed(context, '/result-detail', arguments: job),
               );
             },
@@ -126,10 +118,9 @@ class _ResultsListViewScreenState extends State<ResultsListViewScreen> {
 
 class _ProfessionalJobCard extends StatelessWidget {
   final Map<String, dynamic> job;
-  final double distance;
   final VoidCallback onTap;
 
-  const _ProfessionalJobCard({required this.job, required this.distance, required this.onTap});
+  const _ProfessionalJobCard({required this.job, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -140,8 +131,8 @@ class _ProfessionalJobCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 4))],
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
+          border: Border.all(color: AppColors.border.withOpacity(0.8)),
         ),
         child: Column(
           children: [
@@ -152,7 +143,7 @@ class _ProfessionalJobCard extends StatelessWidget {
                   Container(
                     width: 54, height: 54,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08), 
+                      color: AppColors.primary.withOpacity(0.08), 
                       borderRadius: BorderRadius.circular(14),
                       image: (job['companyLogo'] != null && job['companyLogo'].isNotEmpty)
                         ? DecorationImage(image: NetworkImage(job['companyLogo']), fit: BoxFit.cover)
@@ -173,11 +164,6 @@ class _ProfessionalJobCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                    child: const Text('LIVE', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w800)),
-                  ),
                 ],
               ),
             ),
@@ -188,8 +174,16 @@ class _ProfessionalJobCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text(job['location'] ?? 'Location', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  const Spacer(),
+                  // Wrap location text to prevent overflow
+                  Expanded(
+                    child: Text(
+                      job['location'] ?? 'Location', 
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   const Icon(Icons.timer_outlined, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
                   Text(job['jobType'] ?? 'Full-time', style: const TextStyle(fontSize: 12, color: Colors.grey)),

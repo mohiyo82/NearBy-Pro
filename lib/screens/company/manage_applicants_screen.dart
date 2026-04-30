@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ManageApplicantsScreen extends StatelessWidget {
   final String jobId;
@@ -42,7 +41,7 @@ class ManageApplicantsScreen extends StatelessWidget {
                 children: [
                   Icon(Icons.people_outline, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  const Text('No applicants yet.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  Text('No applicants yet.', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
                 ],
               ),
             );

@@ -22,6 +22,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   int _currentBanner = 0;
   Position? _userPosition;
   Timer? _autoPopupTimer;
+  Timer? _bannerTimer;
 
   static const List<String> _popularSearches = [
     'Hospitals near me', 'Software Houses', 'Best Restaurants', 'Schools', 'Banks', 'Hotels', 'Jobs', 'Factories',
@@ -39,9 +40,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
   ];
 
   static const List<_BannerItem> _banners = [
-    _BannerItem(title: 'Explore Jobs', subtitle: 'Thousands of opportunities', icon: Icons.work_rounded, gradientColors: [AppColors.primary, AppColors.primaryLight], route: '/search-loading', routeArg: 'Jobs'),
-    _BannerItem(title: 'Find Top Hospitals', subtitle: 'Verified medical centers', icon: Icons.local_hospital_rounded, gradientColors: [Color(0xFFE53935), Color(0xFFFF7043)], route: '/search-loading', routeArg: 'Hospitals'),
-    _BannerItem(title: 'Best Schools', subtitle: 'Top-rated education', icon: Icons.school_rounded, gradientColors: [Color(0xFFF57C00), Color(0xFFFFCA28)], route: '/search-loading', routeArg: 'Schools'),
+    _BannerItem(title: 'Explore Jobs', subtitle: 'Thousands of opportunities', icon: Icons.work_rounded, gradientColors: [AppColors.primary, AppColors.primaryLight], route: '/search-loading', routeArg: 'Jobs', imageAsset: 'assets/images/explorecard1.jpg'),
+    _BannerItem(title: 'Find Top Hospitals', subtitle: 'Verified medical centers', icon: Icons.local_hospital_rounded, gradientColors: [Color(0xFFE53935), Color(0xFFFF7043)], route: '/search-loading', routeArg: 'Hospitals', imageAsset: 'assets/images/explorecard2.jpg'),
+    _BannerItem(title: 'Best Schools', subtitle: 'Top-rated education', icon: Icons.school_rounded, gradientColors: [Color(0xFFF57C00), Color(0xFFFFCA28)], route: '/search-loading', routeArg: 'Schools', imageAsset: 'assets/images/explorecard3.jpg'),
   ];
 
   @override
@@ -49,13 +50,29 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
     super.initState();
     _fetchUserLocation();
     _startAutoPopupTimer();
+    _startBannerAutoScroll();
   }
 
   @override
   void dispose() {
     _bannerController.dispose();
     _autoPopupTimer?.cancel();
+    _bannerTimer?.cancel();
     super.dispose();
+  }
+
+  void _startBannerAutoScroll() {
+    _bannerTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_bannerController.hasClients) {
+        int nextPage = _currentBanner + 1;
+        if (nextPage >= _banners.length) nextPage = 0;
+        _bannerController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   Future<void> _fetchUserLocation() async {
@@ -194,8 +211,8 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        border: Border.all(color: AppColors.border.withOpacity(0.8)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,7 +222,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
               GestureDetector(
                 onTap: () => Navigator.pushNamed(context, '/company-profile', arguments: post['authorId']),
                 child: CircleAvatar(
-                  radius: 20, backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  radius: 20, backgroundColor: AppColors.primary.withOpacity(0.1),
                   backgroundImage: (post['authorLogo'] != null && post['authorLogo'].isNotEmpty) ? NetworkImage(post['authorLogo']) : null,
                   child: (post['authorLogo'] == null || post['authorLogo'].isEmpty) ? const Icon(Icons.person, size: 20, color: AppColors.primary) : null,
                 ),
@@ -217,7 +234,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                   Text(timeStr, style: const TextStyle(fontSize: 11, color: AppColors.textGray)),
                 ]),
               ),
-              // --- Follow Button on the Right ---
               if (post['authorType'] == 'company' && post['authorId'] != _authService.currentUser?.uid)
                 _buildFollowButton(post['authorId']),
             ],
@@ -254,7 +270,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
         return TextButton(
           onPressed: () => _dbService.toggleFollow(authorId, isFollowing),
           style: TextButton.styleFrom(
-            backgroundColor: isFollowing ? Colors.grey[200] : AppColors.primary.withValues(alpha: 0.1),
+            backgroundColor: isFollowing ? Colors.grey[200] : AppColors.primary.withOpacity(0.1),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
             minimumSize: const Size(60, 32),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -323,14 +339,14 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Stack(alignment: Alignment.bottomRight, children: [
-              Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), shape: BoxShape.circle, image: (photoUrl != null && photoUrl.isNotEmpty) ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover) : null), child: (photoUrl == null || photoUrl.isEmpty) ? Center(child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : 'U', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white))) : null),
+              Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), shape: BoxShape.circle, image: (photoUrl != null && photoUrl.isNotEmpty) ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover) : null), child: (photoUrl == null || photoUrl.isEmpty) ? Center(child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : 'U', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white))) : null),
               if (isPro) Container(padding: const EdgeInsets.all(2), decoration: const BoxDecoration(color: Colors.amber, shape: BoxShape.circle), child: const Icon(Icons.verified_rounded, color: Colors.white, size: 10)),
             ]),
             const SizedBox(width: 12),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Hello, $userName! 👋', style: const TextStyle(fontSize: 13, color: Colors.white70)), const Text('Find Places Near You', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white))]),
             const Spacer(),
-            if (isPro) Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.amber.withValues(alpha: 0.5))), child: const Text('PRO', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2))),
-            GestureDetector(onTap: () => Navigator.pushNamed(context, '/notification-settings'), child: Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle), child: const Icon(Icons.notifications_outlined, color: Colors.white))),
+            if (isPro) Container(margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.amber.withOpacity(0.5))), child: const Text('PRO', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.2))),
+            GestureDetector(onTap: () => Navigator.pushNamed(context, '/notification-settings'), child: Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: const Icon(Icons.notifications_outlined, color: Colors.white))),
           ]),
           const SizedBox(height: 20),
           _buildSearchBar(),
@@ -344,7 +360,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       onTap: () => Navigator.pushNamed(context, '/global-search'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))]),
         child: const Row(children: [Icon(Icons.search_rounded, color: AppColors.textGray), SizedBox(width: 10), Expanded(child: Text('Search hospitals, jobs, schools...', style: TextStyle(color: AppColors.textLight, fontSize: 14))), Icon(Icons.tune_rounded, color: AppColors.primary, size: 20)]),
       ),
     );
@@ -381,7 +397,50 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
       child: Column(children: [
         SizedBox(height: 150, child: PageView.builder(controller: _bannerController, itemCount: _banners.length, onPageChanged: (i) => setState(() => _currentBanner = i), itemBuilder: (context, index) {
           final b = _banners[index];
-          return GestureDetector(onTap: () => Navigator.pushNamed(context, b.route, arguments: b.routeArg), child: Container(margin: const EdgeInsets.symmetric(horizontal: 20), decoration: BoxDecoration(gradient: LinearGradient(colors: b.gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: b.gradientColors.last.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6))]), child: Stack(children: [Positioned(right: -20, top: -20, child: Container(width: 130, height: 130, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle))), Padding(padding: const EdgeInsets.all(20), child: Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(20)), child: const Text('EXPLORE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2))), const SizedBox(height: 8), Text(b.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)), const SizedBox(height: 4), Text(b.subtitle, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85)))])) , Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle), child: Icon(b.icon, color: Colors.white, size: 28))]))])));
+          return GestureDetector(
+            onTap: () => Navigator.pushNamed(context, b.route, arguments: b.routeArg), 
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20), 
+              decoration: BoxDecoration(
+                color: index == 2 ? Colors.white : null,
+                gradient: index == 2 ? null : LinearGradient(colors: b.gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight), 
+                image: b.imageAsset != null ? DecorationImage(
+                  image: AssetImage(b.imageAsset!), 
+                  fit: BoxFit.cover,
+                ) : null, 
+                borderRadius: BorderRadius.circular(20), 
+                boxShadow: [BoxShadow(color: b.gradientColors.last.withOpacity(0.35), blurRadius: 16, offset: const Offset(0, 6))]
+              ), 
+              child: Stack(
+                children: [
+                  if (b.imageAsset == null) ...[
+                    Positioned(right: -20, top: -20, child: Container(width: 130, height: 130, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle))), 
+                    Padding(
+                      padding: const EdgeInsets.all(20), 
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start, 
+                              mainAxisAlignment: MainAxisAlignment.center, 
+                              children: [
+                                Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white.withOpacity(0.25), borderRadius: BorderRadius.circular(20)), child: const Text('EXPLORE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2))), 
+                                const SizedBox(height: 8), 
+                                Text(b.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)), 
+                                const SizedBox(height: 4), 
+                                Text(b.subtitle, style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.85)))
+                              ]
+                            )
+                          ), 
+                          Container(width: 56, height: 56, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: Icon(b.icon, color: Colors.white, size: 28))
+                        ]
+                      )
+                    )
+                  ]
+                ]
+              )
+            )
+          );
         })),
         const SizedBox(height: 10),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(_banners.length, (i) => AnimatedContainer(duration: const Duration(milliseconds: 300), margin: const EdgeInsets.symmetric(horizontal: 3), width: _currentBanner == i ? 24 : 8, height: 8, decoration: BoxDecoration(color: _currentBanner == i ? AppColors.primary : AppColors.border, borderRadius: BorderRadius.circular(4))))),
@@ -412,7 +471,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   Widget _buildRecentSearches() {
     return SliverToBoxAdapter(
-      child: Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Text('Recent Searches', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)), const Spacer(), TextButton(onPressed: () => Navigator.pushNamed(context, '/search-history'), child: const Text('See All', style: TextStyle(color: AppColors.primary, fontSize: 13)))]), const SizedBox(height: 10), StreamBuilder<QuerySnapshot>(stream: _dbService.searchHistoryStream, builder: (context, snapshot) { if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const _EmptyHistoryPlaceholder(); final docs = snapshot.data!.docs; final count = docs.length > 3 ? 3 : docs.length; return Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)), child: ListView.separated(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: count, separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border, indent: 56), itemBuilder: (context, index) { final data = docs[index].data() as Map<String, dynamic>; return ListTile(leading: Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.history, color: AppColors.primary, size: 18)), title: Text(data['query'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)), trailing: const Icon(Icons.north_west_rounded, size: 16, color: AppColors.textGray), onTap: () => Navigator.pushNamed(context, '/search-loading', arguments: data['query'])); })); })])),
+      child: Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 0), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [const Text('Recent Searches', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)), const Spacer(), TextButton(onPressed: () => Navigator.pushNamed(context, '/search-history'), child: const Text('See All', style: TextStyle(color: AppColors.primary, fontSize: 13)))]), const SizedBox(height: 10), StreamBuilder<QuerySnapshot>(stream: _dbService.searchHistoryStream, builder: (context, snapshot) { if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const _EmptyHistoryPlaceholder(); final docs = snapshot.data!.docs; final count = docs.length > 3 ? 3 : docs.length; return Container(decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)), child: ListView.separated(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: count, separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border, indent: 56), itemBuilder: (context, index) { final data = docs[index].data() as Map<String, dynamic>; return ListTile(leading: Container(width: 36, height: 36, decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle), child: const Icon(Icons.history, color: AppColors.primary, size: 18)), title: Text(data['query'] ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)), trailing: const Icon(Icons.north_west_rounded, size: 16, color: AppColors.textGray), onTap: () => Navigator.pushNamed(context, '/search-loading', arguments: data['query'])); })); })])),
     );
   }
 }
@@ -465,7 +524,7 @@ class _CategoryCard extends StatelessWidget {
   final _CategoryItem item;
   const _CategoryCard({required this.item});
   @override
-  Widget build(BuildContext context) => GestureDetector(onTap: () => Navigator.pushNamed(context, '/search-loading', arguments: item.label), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 60, height: 60, decoration: BoxDecoration(gradient: LinearGradient(colors: [item.color, item.colorLight], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: item.color.withValues(alpha: 0.30), blurRadius: 12, offset: const Offset(0, 5))]), child: Stack(alignment: Alignment.center, children: [Positioned(top: 6, left: 6, child: Container(width: 14, height: 14, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.20), shape: BoxShape.circle))), Icon(item.icon, color: Colors.white, size: 26)])), const SizedBox(height: 8), Text(item.label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis)]));
+  Widget build(BuildContext context) => GestureDetector(onTap: () => Navigator.pushNamed(context, '/search-loading', arguments: item.label), child: Column(mainAxisSize: MainAxisSize.min, children: [Container(width: 60, height: 60, decoration: BoxDecoration(gradient: LinearGradient(colors: [item.color, item.colorLight], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: item.color.withOpacity(0.30), blurRadius: 12, offset: const Offset(0, 5))]), child: Stack(alignment: Alignment.center, children: [Positioned(top: 6, left: 6, child: Container(width: 14, height: 14, decoration: BoxDecoration(color: Colors.white.withOpacity(0.20), shape: BoxShape.circle))), Icon(item.icon, color: Colors.white, size: 26)])), const SizedBox(height: 8), Text(item.label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis)]));
 }
 
 class _StatCard extends StatelessWidget {
@@ -475,7 +534,7 @@ class _StatCard extends StatelessWidget {
   final VoidCallback onTap;
   const _StatCard({required this.icon, required this.label, required this.value, required this.color, required this.onTap});
   @override
-  Widget build(BuildContext context) => Expanded(child: GestureDetector(onTap: onTap, child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border), boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 18),), const SizedBox(height: 10), Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark)), Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textGray))]))));
+  Widget build(BuildContext context) => Expanded(child: GestureDetector(onTap: onTap, child: Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border), boxShadow: [BoxShadow(color: color.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 2))]), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 18),), const SizedBox(height: 10), Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark)), Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textGray))]))));
 }
 
 class _EmptyHistoryPlaceholder extends StatelessWidget {
@@ -490,6 +549,6 @@ class _CategoryItem {
 }
 
 class _BannerItem {
-  final String title, subtitle, route, routeArg; final IconData icon; final List<Color> gradientColors;
-  const _BannerItem({required this.title, required this.subtitle, required this.icon, required this.gradientColors, required this.route, required this.routeArg});
+  final String title, subtitle, route, routeArg; final IconData icon; final List<Color> gradientColors; final String? imageAsset;
+  const _BannerItem({required this.title, required this.subtitle, required this.icon, required this.gradientColors, required this.route, required this.routeArg, this.imageAsset});
 }

@@ -26,11 +26,28 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   final _cvvC = TextEditingController();
   final _ibanC = TextEditingController();
 
+  // Using reliable public URLs for logos to ensure they show up
   final List<Map<String, String>> _methods = [
-    {'id': 'easypaisa', 'title': 'Easypaisa', 'icon': 'assets/images/easypaisa_logo.png'},
-    {'id': 'jazzcash', 'title': 'JazzCash', 'icon': 'assets/images/jazz_logo.png'},
-    {'id': 'meezan', 'title': 'Meezan Bank', 'icon': 'assets/images/meezan_logo.png'},
-    {'id': 'card', 'title': 'Credit/Debit Card', 'icon': 'assets/images/credit_logo.jpg'},
+    {
+      'id': 'easypaisa', 
+      'title': 'Easypaisa', 
+      'icon': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-93lK-T-yU_m8V6Yn3D_Aatp4U0V9O-vjA&s'
+    },
+    {
+      'id': 'jazzcash', 
+      'title': 'JazzCash', 
+      'icon': 'https://seeklogo.com/images/J/jazz-cash-logo-829841352F-seeklogo.com.png'
+    },
+    {
+      'id': 'meezan', 
+      'title': 'Meezan Bank', 
+      'icon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Meezan_Bank_Logo.svg/1200px-Meezan_Bank_Logo.svg.png'
+    },
+    {
+      'id': 'card', 
+      'title': 'Credit/Debit Card', 
+      'icon': 'https://cdn-icons-png.flaticon.com/512/349/349221.png'
+    },
   ];
 
   @override
@@ -350,7 +367,18 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         ),
         child: Row(
           children: [
-            Image.asset(method['icon']!, width: 40, height: 40, errorBuilder: (_, __, ___) => const Icon(Icons.payment)),
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Colors.grey.shade50),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  method['icon']!, 
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.payment_rounded, color: Colors.grey),
+                ),
+              ),
+            ),
             const SizedBox(width: 16),
             Text(method['title']!, style: const TextStyle(fontWeight: FontWeight.bold)),
             const Spacer(),

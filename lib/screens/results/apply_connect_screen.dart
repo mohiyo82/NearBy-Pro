@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../theme/app_theme.dart';
@@ -25,7 +28,7 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
   bool _isLoading = false;
   bool _isAutoFillEnabled = true;
   bool _useGeneratedResume = true;
-  String? _uploadedResumeName;
+  PlatformFile? _pickedResume;
   Map<String, dynamic>? _userData;
   double _resumeCompletion = 0.0;
 
@@ -55,10 +58,11 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
           _userData = doc.data();
           _resumeCompletion = _calculateResumeCompletion(_userData);
           if (_isAutoFillEnabled) {
-            _nameController.text = _userData?['name'] ?? '';
+            _nameController.text = _userData?['name'] ??
+                                  '${_userData?['firstName'] ?? ''} ${_userData?['lastName'] ?? ''}'.trim();
             _emailController.text = _userData?['email'] ?? '';
             _phoneController.text = _userData?['phone'] ?? '';
-            _portfolioController.text = _userData?['portfolioUrl'] ?? '';
+            _portfolioController.text = _userData?['portfolioUrl'] ?? _userData?['linkedin'] ?? '';
           }
         });
       }
@@ -68,7 +72,8 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
   double _calculateResumeCompletion(Map<String, dynamic>? data) {
     if (data == null) return 0.0;
     int filled = 0;
-    if (data['name'] != null && data['name'].toString().isNotEmpty) filled++;
+    if ((data['firstName'] != null && data['firstName'].toString().isNotEmpty) ||
+        (data['name'] != null && data['name'].toString().isNotEmpty)) filled++;
     if (data['email'] != null && data['email'].toString().isNotEmpty) filled++;
     if (data['phone'] != null && data['phone'].toString().isNotEmpty) filled++;
     if (data['skills'] != null && (data['skills'] as List).isNotEmpty) filled++;
@@ -81,24 +86,71 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
     setState(() {
       _isAutoFillEnabled = value ?? false;
       if (_isAutoFillEnabled && _userData != null) {
-        _nameController.text = _userData?['name'] ?? '';
+        _nameController.text = _userData?['name'] ??
+                              '${_userData?['firstName'] ?? ''} ${_userData?['lastName'] ?? ''}'.trim();
         _emailController.text = _userData?['email'] ?? '';
         _phoneController.text = _userData?['phone'] ?? '';
-        _portfolioController.text = _userData?['portfolioUrl'] ?? '';
+        _portfolioController.text = _userData?['portfolioUrl'] ?? _userData?['linkedin'] ?? '';
       }
     });
+  }
+
+  Future<void> _pickResume() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
+
+      if (result != null) {
+        setState(() {
+          _pickedResume = result.files.first;
+          _useGeneratedResume = false;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking file: $e')));
+    }
+  }
+
+  Future<String> _uploadResume(String userId) async {
+    if (_pickedResume == null || _pickedResume!.path == null) return '';
+
+    try {
+      final file = File(_pickedResume!.path!);
+      final safeFileName = _pickedResume!.name.replaceAll(RegExp(r'[^a-zA-Z0-9.]'), '_');
+      final fileName = 'resumes/$userId/${DateTime.now().millisecondsSinceEpoch}_$safeFileName';
+      
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+      UploadTask uploadTask = ref.putFile(file, SettableMetadata(contentType: 'application/pdf'));
+
+      TaskSnapshot snapshot = await uploadTask;
+      if (snapshot.state == TaskState.success) {
+        return await ref.getDownloadURL();
+      } else {
+        throw 'Upload failed with state: ${snapshot.state}';
+      }
+    } catch (e) {
+      debugPrint('Storage Error: $e');
+      rethrow;
+    }
   }
 
   Future<void> _submitApplication(Map<String, dynamic> job) async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedPosition == null) {
+    if (_selectedPosition == null && job['title'] == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a position')));
       return;
     }
 
-    if (_useGeneratedResume && _resumeCompletion < 0.5) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Your NearBy Pro Resume is incomplete. Please complete it or upload a custom one.')));
+    if (_useGeneratedResume && _resumeCompletion < 0.4) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Your NearBy Pro Profile is incomplete. Please complete it to use AI Resume.')));
+      return;
+    }
+
+    if (!_useGeneratedResume && _pickedResume == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please upload a resume or use the AI Resume option.')));
       return;
     }
 
@@ -106,24 +158,37 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
 
     try {
       final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userId = authService.currentUser?.uid ?? 'anonymous';
+
+      String resumeUrl = '';
+      if (!_useGeneratedResume && _pickedResume != null) {
+        resumeUrl = await _uploadResume(userId);
+      }
+
+      final appliedPosition = _selectedPosition ?? job['title'] ?? 'Position';
 
       await dbService.recordApplication({
         'jobId': job['id'] ?? 'unknown',
         'jobTitle': job['title'] ?? 'Position',
         'companyName': job['companyName'] ?? 'Company',
-        'appliedPosition': _selectedPosition,
+        'appliedPosition': appliedPosition,
         'applicantName': _nameController.text,
         'applicantEmail': _emailController.text,
         'applicantPhone': _phoneController.text,
         'portfolioUrl': _portfolioController.text,
         'message': _messageController.text,
         'useGeneratedResume': _useGeneratedResume,
-        'resumeStatus': _useGeneratedResume ? 'Generated CV' : 'Custom Upload',
+        'resumeUrl': resumeUrl,
+        'resumeStatus': _useGeneratedResume ? 'Using NearBy Pro AI Resume' : 'Custom Uploaded Resume',
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/application-success');
+        Navigator.pushReplacementNamed(context, '/application-success', arguments: {
+          'companyName': job['companyName'] ?? 'Company Name',
+          'position': appliedPosition,
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -151,66 +216,72 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildJobHeader(job),
-              Padding(
-                padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Application Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                    const SizedBox(height: 20),
+                    _buildJobHeader(job),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Application Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                          const SizedBox(height: 20),
 
-                    const Text('Position Applying For', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
-                    const SizedBox(height: 8),
-                    _buildPositionDropdown(job['title']),
+                          const Text('Position Applying For', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
+                          const SizedBox(height: 8),
+                          _buildPositionDropdown(job['title']),
 
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Personal Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
-                        Row(
-                          children: [
-                            const Text('Auto-fill', style: TextStyle(fontSize: 12, color: AppColors.primary)),
-                            Switch(
-                              value: _isAutoFillEnabled,
-                              onChanged: _toggleAutoFill,
-                              activeColor: AppColors.primary,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              scale: 0.8,
-                            ),
-                          ],
-                        ),
-                      ],
+                          const SizedBox(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Personal Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
+                              Row(
+                                children: [
+                                  const Text('Auto-fill', style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                                  Switch(
+                                    value: _isAutoFillEnabled,
+                                    onChanged: _toggleAutoFill,
+                                    activeColor: AppColors.primary,
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _buildInputField('Full Name', _nameController, Icons.person_outline_rounded, validator: (v) => v!.isEmpty ? 'Enter your name' : null),
+                          _buildInputField('Email Address', _emailController, Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty ? 'Enter your email' : null),
+                          _buildInputField('Phone Number', _phoneController, Icons.phone_outlined, keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Enter your phone' : null),
+                          _buildInputField('Portfolio / LinkedIn (Optional)', _portfolioController, Icons.link_rounded),
+
+                          const SizedBox(height: 24),
+                          const Text('Cover Letter / Message', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
+                          const SizedBox(height: 8),
+                          _buildMessageField(),
+
+                          const SizedBox(height: 24),
+                          const Text('Attach Resume', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
+                          const SizedBox(height: 12),
+                          _buildResumeSelection(),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _buildInputField('Full Name', _nameController, Icons.person_outline_rounded, validator: (v) => v!.isEmpty ? 'Enter your name' : null),
-                    _buildInputField('Email Address', _emailController, Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty ? 'Enter your email' : null),
-                    _buildInputField('Phone Number', _phoneController, Icons.phone_outlined, keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Enter your phone' : null),
-                    _buildInputField('Portfolio / LinkedIn (Optional)', _portfolioController, Icons.link_rounded),
-
-                    const SizedBox(height: 24),
-                    const Text('Cover Letter / Message', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
-                    const SizedBox(height: 8),
-                    _buildMessageField(),
-
-                    const SizedBox(height: 24),
-                    const Text('Attach Resume', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textGray)),
-                    const SizedBox(height: 12),
-                    _buildResumeSelection(),
-
-                    const SizedBox(height: 32),
-                    _buildSubmitButton(job),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildSubmitButton(job),
+            ),
+          ],
         ),
       ),
     );
@@ -230,9 +301,9 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
         ),
         child: Row(
           children: [
@@ -253,7 +324,7 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text('${job['title'] ?? 'Software House'} • ${job['location'] ?? 'Lahore'}',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
                 ],
               ),
             ),
@@ -298,10 +369,12 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
       ),
       items: [
-        DropdownMenuItem(value: defaultTitle, child: Text(defaultTitle ?? 'Select position')),
+        if (defaultTitle != null) DropdownMenuItem(value: defaultTitle, child: Text(defaultTitle)),
         const DropdownMenuItem(value: 'Full Stack Developer', child: Text('Full Stack Developer')),
         const DropdownMenuItem(value: 'UI/UX Designer', child: Text('UI/UX Designer')),
         const DropdownMenuItem(value: 'Mobile App Developer', child: Text('Mobile App Developer')),
+        const DropdownMenuItem(value: 'Marketing Manager', child: Text('Marketing Manager')),
+        const DropdownMenuItem(value: 'Sales Representative', child: Text('Sales Representative')),
       ],
       onChanged: (val) => setState(() => _selectedPosition = val),
     );
@@ -329,7 +402,9 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
       children: [
         _buildResumeOptionTile(
           title: 'Use NearBy Pro AI Resume',
-          subtitle: _resumeCompletion >= 0.8 ? 'Ready to use (High quality)' : 'Completion: ${(_resumeCompletion * 100).toInt()}%',
+          subtitle: _resumeCompletion >= 0.7
+              ? 'Ready to use (Matches your profile)'
+              : 'Profile incomplete (${(_resumeCompletion * 100).toInt()}%)',
           icon: Icons.auto_awesome_rounded,
           isSelected: _useGeneratedResume,
           onTap: () => setState(() => _useGeneratedResume = true),
@@ -338,17 +413,13 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
         const SizedBox(height: 12),
         _buildResumeOptionTile(
           title: 'Upload Custom Resume',
-          subtitle: _uploadedResumeName ?? 'No file selected (Tap to browse)',
+          subtitle: _pickedResume != null ? _pickedResume!.name : 'PDF, DOC (Tap to browse)',
           icon: Icons.upload_file_rounded,
           isSelected: !_useGeneratedResume,
-          onTap: () {
-            setState(() => _useGeneratedResume = false);
-            // Simulate file picking
-            setState(() => _uploadedResumeName = 'my_resume_2024.pdf');
-          },
+          onTap: _pickResume,
           action: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
             child: const Text('Browse', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
           ),
         ),
@@ -370,7 +441,7 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withValues(alpha: 0.03) : Colors.white,
+          color: isSelected ? AppColors.primary.withOpacity(0.03) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: isSelected ? AppColors.primary : Colors.grey[200]!, width: isSelected ? 1.5 : 1),
         ),
@@ -406,7 +477,7 @@ class _ApplyConnectScreenState extends State<ApplyConnectScreen> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: AppColors.primary.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

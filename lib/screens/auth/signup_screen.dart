@@ -84,8 +84,8 @@ class _SignupScreenState extends State<SignupScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        // Navigate to home or personal details as per your flow
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigate to App Guide for the first-time setup walkthrough
+        Navigator.pushReplacementNamed(context, '/app-guide');
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -113,7 +113,10 @@ class _SignupScreenState extends State<SignupScreen> {
       final authService = Provider.of<AuthService>(context, listen: false);
       final user = await authService.signInWithGoogle();
       if (user != null && mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // For Google Sign-in, we also redirect to guide if it's the first time
+        // Usually you'd check if user.additionalUserInfo.isNewUser (Firebase specific)
+        // Here we'll send them to guide to ensure they know the app features
+        Navigator.pushReplacementNamed(context, '/app-guide');
       }
     } catch (e) {
       setState(() => _errorMessage = 'Google Sign-In failed.');

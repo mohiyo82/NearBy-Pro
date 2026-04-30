@@ -35,6 +35,9 @@ dependencies:
   path_provider: ^2.1.2
   speech_to_text: ^7.3.0
   cloudinary_public: ^0.23.1
+  video_player: ^2.8.1
+  chewie: ^1.8.1
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -54,3 +57,4 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/video/
